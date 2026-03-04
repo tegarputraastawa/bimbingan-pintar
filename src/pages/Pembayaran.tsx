@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getSiswaList, getKelasList, getPembayaranList, savePembayaran, deletePembayaran, formatRupiah, generateId, type Pembayaran as PembayaranType } from "@/lib/store";
+import { getSiswaList, getKelasList, getPembayaranList, savePembayaran, updatePembayaran, deletePembayaran, formatRupiah, generateId, type Pembayaran as PembayaranType } from "@/lib/store";
 import { toast } from "sonner";
-import { CreditCard, Plus, Trash2, CheckCircle, Clock } from "lucide-react";
+import { CreditCard, Plus, Trash2, CheckCircle, Clock, Pencil } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -14,19 +14,43 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 
+const emptyForm = { siswaId: "", jumlah: "", metode: "" as "tunai" | "transfer" | "ewallet", status: "" as "lunas" | "belum_lunas", keterangan: "" };
+
 export default function Pembayaran() {
   const [refresh, setRefresh] = useState(0);
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<"semua" | "lunas" | "belum_lunas">("semua");
-  const [form, setForm] = useState({ siswaId: "", jumlah: "", metode: "" as "tunai" | "transfer" | "ewallet", status: "" as "lunas" | "belum_lunas", keterangan: "" });
+  const [form, setForm] = useState({ ...emptyForm });
 
-  const siswa = getSiswaList().filter((s) => s.aktif);
+  const allSiswa = getSiswaList();
+  const siswaAktif = allSiswa.filter((s) => s.aktif);
   const kelas = getKelasList();
   const allPembayaran = getPembayaranList().sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
   const pembayaran = allPembayaran.filter((p) => filterStatus === "semua" || p.status === filterStatus);
 
-  const selectedSiswa = siswa.find((s) => s.id === form.siswaId);
+  const selectedSiswa = allSiswa.find((s) => s.id === form.siswaId);
   const selectedKelas = selectedSiswa ? kelas.find((k) => k.id === selectedSiswa.kelasId) : null;
+  const maxJumlah = selectedKelas?.harga || 0;
+
+  const handleStatusChange = (status: string) => {
+    if (status === "lunas" && selectedKelas) {
+      setForm({ ...form, status: status as any, jumlah: String(selectedKelas.harga) });
+    } else {
+      setForm({ ...form, status: status as any });
+    }
+  };
+
+  const handleJumlahChange = (val: string) => {
+    const num = Number(val);
+    if (maxJumlah > 0 && num > maxJumlah) {
+      toast.error(`Jumlah tidak boleh melebihi harga kelas: ${formatRupiah(maxJumlah)}`);
+      setForm({ ...form, jumlah: String(maxJumlah) });
+      return;
+    }
+    setForm({ ...form, jumlah: val });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,30 +58,63 @@ export default function Pembayaran() {
       toast.error("Lengkapi data pembayaran");
       return;
     }
+    const jumlah = Number(form.jumlah);
+    if (maxJumlah > 0 && jumlah > maxJumlah) {
+      toast.error(`Jumlah tidak boleh melebihi harga kelas: ${formatRupiah(maxJumlah)}`);
+      return;
+    }
     savePembayaran({
       id: generateId(),
       siswaId: form.siswaId,
-      jumlah: Number(form.jumlah),
+      jumlah,
       tanggal: new Date().toISOString(),
       metode: form.metode,
       status: form.status,
       keterangan: form.keterangan,
     });
     toast.success("Pembayaran berhasil dicatat!");
-    setForm({ siswaId: "", jumlah: "", metode: "" as any, status: "" as any, keterangan: "" });
+    setForm({ ...emptyForm });
     setOpen(false);
     setRefresh((r) => r + 1);
   };
 
-  const toggleStatus = (p: PembayaranType) => {
-    const list = getPembayaranList();
-    const idx = list.findIndex((x) => x.id === p.id);
-    if (idx >= 0) {
-      list[idx] = { ...list[idx], status: list[idx].status === "lunas" ? "belum_lunas" : "lunas" };
-      localStorage.setItem("bimbel_pembayaran", JSON.stringify(list));
-      toast.success(`Status diubah ke ${list[idx].status === "lunas" ? "Lunas" : "Belum Lunas"}`);
-      setRefresh((r) => r + 1);
+  const openEdit = (p: PembayaranType) => {
+    setEditId(p.id);
+    setForm({
+      siswaId: p.siswaId,
+      jumlah: String(p.jumlah),
+      metode: p.metode,
+      status: p.status,
+      keterangan: p.keterangan,
+    });
+    setEditOpen(true);
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editId || !form.jumlah || !form.metode || !form.status) {
+      toast.error("Lengkapi data pembayaran");
+      return;
     }
+    const jumlah = Number(form.jumlah);
+    if (maxJumlah > 0 && jumlah > maxJumlah) {
+      toast.error(`Jumlah tidak boleh melebihi harga kelas: ${formatRupiah(maxJumlah)}`);
+      return;
+    }
+    const existing = getPembayaranList().find((p) => p.id === editId);
+    if (!existing) return;
+    updatePembayaran({
+      ...existing,
+      jumlah,
+      metode: form.metode,
+      status: form.status,
+      keterangan: form.keterangan,
+    });
+    toast.success("Pembayaran berhasil diperbarui!");
+    setForm({ ...emptyForm });
+    setEditOpen(false);
+    setEditId(null);
+    setRefresh((r) => r + 1);
   };
 
   const hapus = (id: string) => {
@@ -66,7 +123,70 @@ export default function Pembayaran() {
     setRefresh((r) => r + 1);
   };
 
-  const allSiswa = getSiswaList();
+  const renderForm = (onSubmit: (e: React.FormEvent) => void, isEdit: boolean) => (
+    <form onSubmit={onSubmit} className="space-y-4">
+      {!isEdit && (
+        <div className="space-y-2">
+          <Label>Siswa *</Label>
+          <Select value={form.siswaId} onValueChange={(v) => setForm({ ...form, siswaId: v, jumlah: "", status: "" as any })}>
+            <SelectTrigger><SelectValue placeholder="Pilih siswa" /></SelectTrigger>
+            <SelectContent>
+              {siswaAktif.map((s) => <SelectItem key={s.id} value={s.id}>{s.nama}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      {isEdit && selectedSiswa && (
+        <p className="text-sm font-medium">Siswa: {selectedSiswa.nama}</p>
+      )}
+      {selectedKelas && (
+        <p className="text-sm text-muted-foreground">Kelas: {selectedKelas.nama} — Maks: {formatRupiah(selectedKelas.harga)}/bulan</p>
+      )}
+      <div className="space-y-2">
+        <Label>Status Pembayaran *</Label>
+        <Select value={form.status} onValueChange={handleStatusChange}>
+          <SelectTrigger><SelectValue placeholder="Status pembayaran" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="lunas">Lunas</SelectItem>
+            <SelectItem value="belum_lunas">Belum Lunas</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label>Jumlah (Rp) *</Label>
+        <Input
+          type="number"
+          placeholder="0"
+          value={form.jumlah}
+          onChange={(e) => handleJumlahChange(e.target.value)}
+          max={maxJumlah > 0 ? maxJumlah : undefined}
+          readOnly={form.status === "lunas"}
+        />
+        {form.status === "lunas" && selectedKelas && (
+          <p className="text-xs text-muted-foreground">Otomatis terisi harga kelas saat status Lunas</p>
+        )}
+        {maxJumlah > 0 && form.status !== "lunas" && (
+          <p className="text-xs text-muted-foreground">Maksimal: {formatRupiah(maxJumlah)}</p>
+        )}
+      </div>
+      <div className="space-y-2">
+        <Label>Metode *</Label>
+        <Select value={form.metode} onValueChange={(v: any) => setForm({ ...form, metode: v })}>
+          <SelectTrigger><SelectValue placeholder="Metode pembayaran" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="tunai">Tunai</SelectItem>
+            <SelectItem value="transfer">Transfer Bank</SelectItem>
+            <SelectItem value="ewallet">E-Wallet</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label>Keterangan</Label>
+        <Input placeholder="Opsional" value={form.keterangan} onChange={(e) => setForm({ ...form, keterangan: e.target.value })} />
+      </div>
+      <Button type="submit" className="w-full">{isEdit ? "Simpan Perubahan" : "Simpan Pembayaran"}</Button>
+    </form>
+  );
 
   return (
     <div className="p-6 md:p-8 space-y-6 animate-fade-in" key={refresh}>
@@ -75,7 +195,7 @@ export default function Pembayaran() {
           <h1 className="text-2xl md:text-3xl font-bold">Pembayaran</h1>
           <p className="text-muted-foreground mt-1">Catat dan kelola pembayaran siswa</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setForm({ ...emptyForm }); }}>
           <DialogTrigger asChild>
             <Button><Plus className="w-4 h-4 mr-2" />Catat Pembayaran</Button>
           </DialogTrigger>
@@ -83,53 +203,19 @@ export default function Pembayaran() {
             <DialogHeader>
               <DialogTitle>Catat Pembayaran Baru</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Siswa *</Label>
-                <Select value={form.siswaId} onValueChange={(v) => setForm({ ...form, siswaId: v })}>
-                  <SelectTrigger><SelectValue placeholder="Pilih siswa" /></SelectTrigger>
-                  <SelectContent>
-                    {siswa.map((s) => <SelectItem key={s.id} value={s.id}>{s.nama}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              {selectedKelas && (
-                <p className="text-sm text-muted-foreground">Kelas: {selectedKelas.nama} — {formatRupiah(selectedKelas.harga)}/bulan</p>
-              )}
-              <div className="space-y-2">
-                <Label>Jumlah (Rp) *</Label>
-                <Input type="number" placeholder="0" value={form.jumlah} onChange={(e) => setForm({ ...form, jumlah: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Metode *</Label>
-                <Select value={form.metode} onValueChange={(v: any) => setForm({ ...form, metode: v })}>
-                  <SelectTrigger><SelectValue placeholder="Metode pembayaran" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="tunai">Tunai</SelectItem>
-                    <SelectItem value="transfer">Transfer Bank</SelectItem>
-                    <SelectItem value="ewallet">E-Wallet</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Status Pembayaran *</Label>
-                <Select value={form.status} onValueChange={(v: any) => setForm({ ...form, status: v })}>
-                  <SelectTrigger><SelectValue placeholder="Status pembayaran" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="lunas">Lunas</SelectItem>
-                    <SelectItem value="belum_lunas">Belum Lunas</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Keterangan</Label>
-                <Input placeholder="Opsional" value={form.keterangan} onChange={(e) => setForm({ ...form, keterangan: e.target.value })} />
-              </div>
-              <Button type="submit" className="w-full">Simpan Pembayaran</Button>
-            </form>
+            {renderForm(handleSubmit, false)}
           </DialogContent>
         </Dialog>
       </div>
+
+      <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) { setForm({ ...emptyForm }); setEditId(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Pembayaran</DialogTitle>
+          </DialogHeader>
+          {renderForm(handleEditSubmit, true)}
+        </DialogContent>
+      </Dialog>
 
       <div className="flex gap-2">
         {([["semua", "Semua"], ["lunas", "Lunas"], ["belum_lunas", "Belum Lunas"]] as const).map(([val, label]) => (
@@ -149,7 +235,7 @@ export default function Pembayaran() {
       ) : (
         <div className="space-y-3">
           {pembayaran.map((p) => {
-            const s = allSiswa.find((s) => s.id === p.siswaId);
+            const s = allSiswa.find((x) => x.id === p.siswaId);
             const isLunas = p.status === "lunas";
             return (
               <Card key={p.id} className="border-none shadow-sm">
@@ -169,8 +255,8 @@ export default function Pembayaran() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-bold text-primary">{formatRupiah(p.jumlah)}</span>
-                    <Button variant="ghost" size="sm" className={isLunas ? "text-success hover:text-success" : "text-warning hover:text-warning"} onClick={() => toggleStatus(p)} title={isLunas ? "Tandai belum lunas" : "Tandai lunas"}>
-                      {isLunas ? <CheckCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(p)} title="Edit pembayaran">
+                      <Pencil className="w-4 h-4" />
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
