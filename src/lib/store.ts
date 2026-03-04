@@ -78,6 +78,15 @@ export function savePembayaran(p: Pembayaran) {
   saveToStorage("bimbel_pembayaran", list);
 }
 
+export function updatePembayaran(p: Pembayaran) {
+  const list = getPembayaranList();
+  const idx = list.findIndex((x) => x.id === p.id);
+  if (idx >= 0) {
+    list[idx] = p;
+    saveToStorage("bimbel_pembayaran", list);
+  }
+}
+
 export function deletePembayaran(id: string) {
   saveToStorage("bimbel_pembayaran", getPembayaranList().filter((p) => p.id !== id));
 }
