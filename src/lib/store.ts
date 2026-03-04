@@ -22,6 +22,7 @@ export interface Pembayaran {
   jumlah: number;
   tanggal: string;
   metode: "tunai" | "transfer" | "ewallet";
+  status: "lunas" | "belum_lunas";
   keterangan: string;
 }
 
