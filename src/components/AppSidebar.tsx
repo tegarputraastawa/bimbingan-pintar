@@ -1,10 +1,12 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, UserPlus, Users, CreditCard, FileBarChart, GraduationCap } from "lucide-react";
+import { LayoutDashboard, UserPlus, Users, CreditCard, FileBarChart, GraduationCap, Calendar, BookOpen } from "lucide-react";
 
 const links = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/pendaftaran", icon: UserPlus, label: "Pendaftaran" },
   { to: "/siswa", icon: Users, label: "Data Siswa" },
+  { to: "/tutor", icon: GraduationCap, label: "Data Tutor" },
+  { to: "/jadwal", icon: Calendar, label: "Jadwal" },
   { to: "/pembayaran", icon: CreditCard, label: "Pembayaran" },
   { to: "/laporan", icon: FileBarChart, label: "Laporan" },
 ];
@@ -16,7 +18,7 @@ export default function AppSidebar() {
     <aside className="hidden md:flex w-64 flex-col bg-sidebar text-sidebar-foreground min-h-screen">
       <div className="flex items-center gap-3 px-6 py-6 border-b border-sidebar-border">
         <div className="w-10 h-10 rounded-xl bg-sidebar-primary flex items-center justify-center">
-          <GraduationCap className="w-6 h-6 text-sidebar-primary-foreground" />
+          <BookOpen className="w-6 h-6 text-sidebar-primary-foreground" />
         </div>
         <div>
           <h1 className="font-bold text-lg text-sidebar-primary">BimbelKu</h1>

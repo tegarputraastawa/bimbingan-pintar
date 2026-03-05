@@ -9,6 +9,8 @@ import Pendaftaran from "./pages/Pendaftaran";
 import DataSiswa from "./pages/DataSiswa";
 import Pembayaran from "./pages/Pembayaran";
 import Laporan from "./pages/Laporan";
+import Tutor from "./pages/Tutor";
+import Jadwal from "./pages/Jadwal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +27,8 @@ const App = () => (
             <Route path="/pendaftaran" element={<Pendaftaran />} />
             <Route path="/siswa" element={<DataSiswa />} />
             <Route path="/pembayaran" element={<Pembayaran />} />
+            <Route path="/tutor" element={<Tutor />} />
+            <Route path="/jadwal" element={<Jadwal />} />
             <Route path="/laporan" element={<Laporan />} />
           </Route>
           <Route path="*" element={<NotFound />} />
