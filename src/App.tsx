@@ -11,6 +11,7 @@ import Pembayaran from "./pages/Pembayaran";
 import Laporan from "./pages/Laporan";
 import Tutor from "./pages/Tutor";
 import Jadwal from "./pages/Jadwal";
+import Display from "./pages/Display";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/jadwal" element={<Jadwal />} />
             <Route path="/laporan" element={<Laporan />} />
           </Route>
+          <Route path="/display" element={<Display />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
