@@ -1,20 +1,26 @@
-import { Users, UserCheck, UserX, CreditCard, TrendingUp, BookOpen, Calendar, Clock, GraduationCap } from "lucide-react";
-import { getSiswaList, getPembayaranList, getKelasList, getJadwalList, getTutorList, formatRupiah } from "@/lib/store";
+import { Users, UserCheck, UserX, CreditCard, TrendingUp, BookOpen, Calendar, Clock, GraduationCap, ChevronLeft, ChevronRight } from "lucide-react";
+import { getSiswaList, getPembayaranList, getKelasList, getJadwalList, getTutorList, getLiburList, formatRupiah, formatTanggalShort } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useMemo, useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const HARI_LIST = ["senin", "selasa", "rabu", "kamis", "jumat", "sabtu", "minggu"] as const;
-const HARI_LABEL: Record<string, string> = {
-  senin: "Senin", selasa: "Selasa", rabu: "Rabu", kamis: "Kamis",
-  jumat: "Jumat", sabtu: "Sabtu", minggu: "Minggu",
+const HARI_LABEL: Record<number, string> = {
+  0: "Minggu", 1: "Senin", 2: "Selasa", 3: "Rabu", 4: "Kamis", 5: "Jumat", 6: "Sabtu",
 };
 
-function getHariIni(): string {
-  const days = ["minggu", "senin", "selasa", "rabu", "kamis", "jumat", "sabtu"];
-  return days[new Date().getDay()];
+function getWeekDates(refDate: Date): string[] {
+  const d = new Date(refDate);
+  const day = d.getDay();
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - ((day + 6) % 7));
+  const dates: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    const dd = new Date(monday);
+    dd.setDate(monday.getDate() + i);
+    dates.push(dd.toISOString().split("T")[0]);
+  }
+  return dates;
 }
 
 export default function Dashboard() {
@@ -23,7 +29,8 @@ export default function Dashboard() {
   const kelas = getKelasList();
   const jadwalList = getJadwalList();
   const tutors = getTutorList();
-  const [jadwalView, setJadwalView] = useState<"hari" | "minggu">("hari");
+  const liburList = getLiburList();
+  const [weekRef, setWeekRef] = useState(new Date());
 
   const stats = useMemo(() => {
     const aktif = siswa.filter((s) => s.aktif).length;
@@ -47,41 +54,27 @@ export default function Dashboard() {
     { label: "Total Pemasukan", value: formatRupiah(stats.totalPemasukan), icon: CreditCard, color: "text-primary" },
   ];
 
-  const hariIni = getHariIni();
+  const today = new Date().toISOString().split("T")[0];
+  const weekDates = useMemo(() => getWeekDates(weekRef), [weekRef]);
 
-  const jadwalHariIni = useMemo(() => {
-    return jadwalList
-      .filter((j) => j.hari === hariIni)
-      .sort((a, b) => a.jamMulai.localeCompare(b.jamMulai));
-  }, [jadwalList, hariIni]);
+  const liburMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    liburList.forEach((l) => { m[l.tanggal] = l.keterangan; });
+    return m;
+  }, [liburList]);
 
-  const jadwalPerHari = useMemo(() => {
-    const grouped: Record<string, typeof jadwalList> = {};
-    HARI_LIST.forEach((h) => {
-      const items = jadwalList.filter((j) => j.hari === h).sort((a, b) => a.jamMulai.localeCompare(b.jamMulai));
-      if (items.length > 0) grouped[h] = items;
+  const jadwalByDate = useMemo(() => {
+    const m: Record<string, typeof jadwalList> = {};
+    jadwalList.forEach((j) => {
+      if (!m[j.tanggal]) m[j.tanggal] = [];
+      m[j.tanggal].push(j);
     });
-    return grouped;
+    Object.values(m).forEach((arr) => arr.sort((a, b) => a.jamMulai.localeCompare(b.jamMulai)));
+    return m;
   }, [jadwalList]);
 
-  const renderJadwalItem = (j: typeof jadwalList[0]) => {
-    const tutor = tutors.find((t) => t.id === j.tutorId);
-    const k = kelas.find((k) => k.id === j.kelasId);
-    return (
-      <div key={j.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-        <div className="space-y-0.5">
-          <p className="font-medium text-sm">{k?.nama || "-"}</p>
-          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><GraduationCap className="w-3 h-3" />{tutor?.nama || "-"}</span>
-            <span>Ruang: {j.ruangan}</span>
-          </div>
-        </div>
-        <span className="flex items-center gap-1 text-sm font-medium text-primary">
-          <Clock className="w-3.5 h-3.5" />{j.jamMulai} - {j.jamSelesai}
-        </span>
-      </div>
-    );
-  };
+  const prevWeek = () => { const d = new Date(weekRef); d.setDate(d.getDate() - 7); setWeekRef(d); };
+  const nextWeek = () => { const d = new Date(weekRef); d.setDate(d.getDate() + 7); setWeekRef(d); };
 
   const recentSiswa = [...siswa].sort((a, b) => new Date(b.tanggalDaftar).getTime() - new Date(a.tanggalDaftar).getTime()).slice(0, 5);
 
@@ -114,50 +107,60 @@ export default function Dashboard() {
       <Card className="border-none shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Calendar className="w-5 h-5" /> Jadwal Bimbel
+            <Calendar className="w-5 h-5" /> Jadwal Minggu Ini
           </CardTitle>
-          <div className="flex gap-1">
-            <Button variant={jadwalView === "hari" ? "default" : "outline"} size="sm" onClick={() => setJadwalView("hari")}>
-              Hari Ini ({HARI_LABEL[hariIni]})
-            </Button>
-            <Button variant={jadwalView === "minggu" ? "default" : "outline"} size="sm" onClick={() => setJadwalView("minggu")}>
-              Minggu Ini
-            </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={prevWeek}><ChevronLeft className="w-4 h-4" /></Button>
+            <Button variant="outline" size="sm" onClick={() => setWeekRef(new Date())}>Hari Ini</Button>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={nextWeek}><ChevronRight className="w-4 h-4" /></Button>
           </div>
         </CardHeader>
         <CardContent>
-          {jadwalView === "hari" ? (
-            jadwalHariIni.length === 0 ? (
-              <p className="text-muted-foreground text-sm py-4 text-center">Tidak ada jadwal hari ini</p>
-            ) : (
-              <div>{jadwalHariIni.map(renderJadwalItem)}</div>
-            )
-          ) : (
-            Object.keys(jadwalPerHari).length === 0 ? (
-              <p className="text-muted-foreground text-sm py-4 text-center">Belum ada jadwal dibuat</p>
-            ) : (
-              <div className="space-y-4">
-                {HARI_LIST.map((h) => {
-                  const items = jadwalPerHari[h];
-                  if (!items) return null;
-                  return (
-                    <div key={h}>
-                      <Badge variant={h === hariIni ? "default" : "secondary"} className="mb-2">{HARI_LABEL[h]}</Badge>
-                      <div>{items.map(renderJadwalItem)}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            )
-          )}
+          <p className="text-xs text-muted-foreground mb-3 text-center">
+            {formatTanggalShort(weekDates[0])} — {formatTanggalShort(weekDates[6])}
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-7 gap-2">
+            {weekDates.map((dateStr) => {
+              const d = new Date(dateStr + "T00:00:00");
+              const dayNum = d.getDay();
+              const isToday = dateStr === today;
+              const isHoliday = !!liburMap[dateStr];
+              const items = jadwalByDate[dateStr] || [];
+
+              return (
+                <div
+                  key={dateStr}
+                  className={`rounded-lg p-2 text-center ${isToday ? "ring-2 ring-primary bg-primary/5" : isHoliday ? "bg-destructive/5" : "bg-muted/50"}`}
+                >
+                  <p className={`text-[10px] font-bold uppercase ${isHoliday ? "text-destructive" : isToday ? "text-primary" : "text-muted-foreground"}`}>
+                    {HARI_LABEL[dayNum]}
+                  </p>
+                  <p className={`text-lg font-bold ${isToday ? "text-primary" : isHoliday ? "text-destructive" : ""}`}>{d.getDate()}</p>
+                  {isHoliday && <Badge variant="destructive" className="text-[9px] px-1 py-0">{liburMap[dateStr]}</Badge>}
+                  <div className="mt-1 space-y-1">
+                    {items.slice(0, 3).map((j) => {
+                      const k = kelas.find((k) => k.id === j.kelasId);
+                      return (
+                        <div key={j.id} className="text-[10px] bg-card rounded px-1 py-0.5 truncate border border-border">
+                          <span className="font-medium">{k?.nama || "-"}</span>
+                          <br />
+                          <span className="text-muted-foreground">{j.jamMulai}</span>
+                        </div>
+                      );
+                    })}
+                    {items.length > 3 && <p className="text-[10px] text-muted-foreground">+{items.length - 3} lagi</p>}
+                    {items.length === 0 && !isHoliday && <p className="text-[10px] text-muted-foreground">—</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
 
       <div className="grid lg:grid-cols-2 gap-6">
         <Card className="border-none shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">Pendaftaran Terbaru</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-lg">Pendaftaran Terbaru</CardTitle></CardHeader>
           <CardContent>
             {recentSiswa.length === 0 ? (
               <p className="text-muted-foreground text-sm py-4">Belum ada siswa terdaftar</p>
@@ -183,9 +186,7 @@ export default function Dashboard() {
         </Card>
 
         <Card className="border-none shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">Daftar Kelas & Harga</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-lg">Daftar Kelas & Harga</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-3">
               {kelas.map((k) => (

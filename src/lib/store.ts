@@ -39,9 +39,15 @@ export interface Jadwal {
   tutorId: string;
   kelasId: string;
   ruangan: string;
-  hari: "senin" | "selasa" | "rabu" | "kamis" | "jumat" | "sabtu" | "minggu";
+  tanggal: string; // YYYY-MM-DD
   jamMulai: string;
   jamSelesai: string;
+}
+
+export interface Libur {
+  id: string;
+  tanggal: string; // YYYY-MM-DD
+  keterangan: string;
 }
 
 const KELAS_DEFAULT: Kelas[] = [
@@ -126,7 +132,7 @@ export function deleteTutor(id: string) {
   saveToStorage("bimbel_tutor", getTutorList().filter((t) => t.id !== id));
 }
 
-// Jadwal
+// Jadwal (date-based)
 export function getJadwalList(): Jadwal[] {
   return loadFromStorage("bimbel_jadwal", []);
 }
@@ -143,10 +149,41 @@ export function deleteJadwal(id: string) {
   saveToStorage("bimbel_jadwal", getJadwalList().filter((j) => j.id !== id));
 }
 
+// Libur (holidays)
+export function getLiburList(): Libur[] {
+  return loadFromStorage("bimbel_libur", []);
+}
+
+export function saveLibur(libur: Libur) {
+  const list = getLiburList();
+  const idx = list.findIndex((l) => l.id === libur.id);
+  if (idx >= 0) list[idx] = libur;
+  else list.push(libur);
+  saveToStorage("bimbel_libur", list);
+}
+
+export function deleteLibur(id: string) {
+  saveToStorage("bimbel_libur", getLiburList().filter((l) => l.id !== id));
+}
+
+export function isLibur(tanggal: string): boolean {
+  return getLiburList().some((l) => l.tanggal === tanggal);
+}
+
 export function formatRupiah(n: number) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 }
 
 export function generateId() {
   return Math.random().toString(36).substring(2, 10);
+}
+
+export function formatTanggal(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+
+export function formatTanggalShort(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" });
 }
