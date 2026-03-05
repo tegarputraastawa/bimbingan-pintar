@@ -26,6 +26,24 @@ export interface Pembayaran {
   keterangan: string;
 }
 
+export interface Tutor {
+  id: string;
+  nama: string;
+  telepon: string;
+  email: string;
+  bidang: string;
+}
+
+export interface Jadwal {
+  id: string;
+  tutorId: string;
+  kelasId: string;
+  ruangan: string;
+  hari: "senin" | "selasa" | "rabu" | "kamis" | "jumat" | "sabtu" | "minggu";
+  jamMulai: string;
+  jamSelesai: string;
+}
+
 const KELAS_DEFAULT: Kelas[] = [
   { id: "k1", nama: "Matematika SD", harga: 350000, deskripsi: "Kelas 1-6 SD" },
   { id: "k2", nama: "Matematika SMP", harga: 450000, deskripsi: "Kelas 7-9 SMP" },
@@ -89,6 +107,40 @@ export function updatePembayaran(p: Pembayaran) {
 
 export function deletePembayaran(id: string) {
   saveToStorage("bimbel_pembayaran", getPembayaranList().filter((p) => p.id !== id));
+}
+
+// Tutor
+export function getTutorList(): Tutor[] {
+  return loadFromStorage("bimbel_tutor", []);
+}
+
+export function saveTutor(tutor: Tutor) {
+  const list = getTutorList();
+  const idx = list.findIndex((t) => t.id === tutor.id);
+  if (idx >= 0) list[idx] = tutor;
+  else list.push(tutor);
+  saveToStorage("bimbel_tutor", list);
+}
+
+export function deleteTutor(id: string) {
+  saveToStorage("bimbel_tutor", getTutorList().filter((t) => t.id !== id));
+}
+
+// Jadwal
+export function getJadwalList(): Jadwal[] {
+  return loadFromStorage("bimbel_jadwal", []);
+}
+
+export function saveJadwal(jadwal: Jadwal) {
+  const list = getJadwalList();
+  const idx = list.findIndex((j) => j.id === jadwal.id);
+  if (idx >= 0) list[idx] = jadwal;
+  else list.push(jadwal);
+  saveToStorage("bimbel_jadwal", list);
+}
+
+export function deleteJadwal(id: string) {
+  saveToStorage("bimbel_jadwal", getJadwalList().filter((j) => j.id !== id));
 }
 
 export function formatRupiah(n: number) {
