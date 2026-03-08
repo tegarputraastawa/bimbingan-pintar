@@ -14,7 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      laporan_perkembangan: {
+        Row: {
+          catatan: string
+          created_at: string
+          id: string
+          kehadiran: string
+          kelas_id: string
+          nilai: number | null
+          siswa_id: string
+          tanggal: string
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          catatan?: string
+          created_at?: string
+          id?: string
+          kehadiran?: string
+          kelas_id: string
+          nilai?: number | null
+          siswa_id: string
+          tanggal: string
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          catatan?: string
+          created_at?: string
+          id?: string
+          kehadiran?: string
+          kelas_id?: string
+          nilai?: number | null
+          siswa_id?: string
+          tanggal?: string
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      orang_tua: {
+        Row: {
+          alamat: string
+          created_at: string
+          email: string
+          hubungan: string
+          id: string
+          nama: string
+          siswa_id: string
+          telepon: string
+          updated_at: string
+        }
+        Insert: {
+          alamat?: string
+          created_at?: string
+          email?: string
+          hubungan?: string
+          id?: string
+          nama: string
+          siswa_id: string
+          telepon?: string
+          updated_at?: string
+        }
+        Update: {
+          alamat?: string
+          created_at?: string
+          email?: string
+          hubungan?: string
+          id?: string
+          nama?: string
+          siswa_id?: string
+          telepon?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ruangan: {
+        Row: {
+          created_at: string
+          id: string
+          kapasitas: number
+          nama: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kapasitas?: number
+          nama: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kapasitas?: number
+          nama?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
