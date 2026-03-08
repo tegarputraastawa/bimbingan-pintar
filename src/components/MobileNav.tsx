@@ -1,13 +1,16 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, UserPlus, Users, CreditCard, FileBarChart, GraduationCap, Calendar } from "lucide-react";
+import { LayoutDashboard, UserPlus, Users, CreditCard, FileBarChart, GraduationCap, Calendar, DoorOpen, UserCheck, ClipboardList } from "lucide-react";
 
 const links = [
   { to: "/", icon: LayoutDashboard, label: "Home" },
   { to: "/pendaftaran", icon: UserPlus, label: "Daftar" },
   { to: "/siswa", icon: Users, label: "Siswa" },
   { to: "/tutor", icon: GraduationCap, label: "Tutor" },
+  { to: "/ruangan", icon: DoorOpen, label: "Ruangan" },
   { to: "/jadwal", icon: Calendar, label: "Jadwal" },
   { to: "/pembayaran", icon: CreditCard, label: "Bayar" },
+  { to: "/orang-tua", icon: UserCheck, label: "Ortu" },
+  { to: "/perkembangan", icon: ClipboardList, label: "Report" },
   { to: "/laporan", icon: FileBarChart, label: "Laporan" },
 ];
 
