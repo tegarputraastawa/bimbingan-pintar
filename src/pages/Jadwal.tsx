@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +9,9 @@ import {
   getLiburList, saveLibur, deleteLibur, generateId, formatTanggalShort,
   type Jadwal as JadwalType,
 } from "@/lib/store";
+import { checkRoomConflict, getRuanganAktif } from "@/lib/ruangan";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, Calendar, Clock, ChevronLeft, ChevronRight, GraduationCap, Ban, Tv } from "lucide-react";
+import { Plus, Trash2, Pencil, Clock, ChevronLeft, ChevronRight, GraduationCap, Ban, Tv, DoorOpen } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -43,6 +44,8 @@ function toDateObj(s: string) {
 
 const emptyForm = { tutorId: "", kelasId: "", ruangan: "", tanggal: "", jamMulai: "", jamSelesai: "" };
 
+type RuanganDB = { id: string; nama: string; kapasitas: number; status: string };
+
 export default function Jadwal() {
   const [refresh, setRefresh] = useState(0);
   const [weekRef, setWeekRef] = useState(new Date());
@@ -52,7 +55,12 @@ export default function Jadwal() {
   const [form, setForm] = useState({ ...emptyForm });
   const [liburOpen, setLiburOpen] = useState(false);
   const [liburForm, setLiburForm] = useState({ tanggal: "", keterangan: "" });
+  const [ruanganList, setRuanganList] = useState<RuanganDB[]>([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    getRuanganAktif().then(setRuanganList);
+  }, []);
 
   const jadwalList = getJadwalList();
   const tutors = getTutorList();
@@ -76,25 +84,22 @@ export default function Jadwal() {
     return m;
   }, [jadwalList]);
 
-  const prevWeek = () => {
-    const d = new Date(weekRef);
-    d.setDate(d.getDate() - 7);
-    setWeekRef(d);
-  };
-  const nextWeek = () => {
-    const d = new Date(weekRef);
-    d.setDate(d.getDate() + 7);
-    setWeekRef(d);
-  };
+  const prevWeek = () => { const d = new Date(weekRef); d.setDate(d.getDate() - 7); setWeekRef(d); };
+  const nextWeek = () => { const d = new Date(weekRef); d.setDate(d.getDate() + 7); setWeekRef(d); };
   const goToday = () => setWeekRef(new Date());
 
-  const validate = () => {
+  const validate = (excludeId?: string) => {
     if (!form.tutorId || !form.kelasId || !form.ruangan || !form.tanggal || !form.jamMulai || !form.jamSelesai) {
       toast.error("Lengkapi semua data jadwal");
       return false;
     }
     if (form.jamSelesai <= form.jamMulai) {
       toast.error("Jam selesai harus lebih besar dari jam mulai");
+      return false;
+    }
+    // Check room conflict
+    if (checkRoomConflict(form.ruangan, form.tanggal, form.jamMulai, form.jamSelesai, excludeId)) {
+      toast.error(`Ruangan "${form.ruangan}" sudah terpakai pada tanggal dan jam tersebut!`);
       return false;
     }
     return true;
@@ -118,7 +123,7 @@ export default function Jadwal() {
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editId || !validate()) return;
+    if (!editId || !validate(editId)) return;
     saveJadwal({ id: editId, ...form });
     toast.success("Jadwal diperbarui!");
     setForm({ ...emptyForm });
@@ -177,7 +182,24 @@ export default function Jadwal() {
       </div>
       <div className="space-y-2">
         <Label>Ruangan *</Label>
-        <Input placeholder="Ruang A1, Lab, dll" value={form.ruangan} onChange={(e) => setForm({ ...form, ruangan: e.target.value })} />
+        {ruanganList.length > 0 ? (
+          <Select value={form.ruangan} onValueChange={(v) => setForm({ ...form, ruangan: v })}>
+            <SelectTrigger><SelectValue placeholder="Pilih ruangan" /></SelectTrigger>
+            <SelectContent>
+              {ruanganList.map((r) => (
+                <SelectItem key={r.id} value={r.nama}>
+                  <span className="flex items-center gap-2">
+                    <DoorOpen className="w-3.5 h-3.5" />
+                    {r.nama} (maks {r.kapasitas} siswa)
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Input placeholder="Ruang A1, Lab, dll" value={form.ruangan} onChange={(e) => setForm({ ...form, ruangan: e.target.value })} />
+        )}
+        <p className="text-xs text-muted-foreground">Ruangan yang sama tidak boleh beririsan jadwalnya</p>
       </div>
       <div className="space-y-2">
         <Label>Tanggal *</Label>
@@ -335,7 +357,9 @@ export default function Jadwal() {
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <GraduationCap className="w-3 h-3" />{tutor?.nama || "-"}
                       </div>
-                      <div className="text-muted-foreground">📍 {j.ruangan}</div>
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <DoorOpen className="w-3 h-3" />{j.ruangan}
+                      </div>
                     </div>
                   );
                 })}
