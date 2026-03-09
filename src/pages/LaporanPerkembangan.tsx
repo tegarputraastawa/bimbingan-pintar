@@ -448,18 +448,42 @@ export default function LaporanPerkembangan() {
                         <p className="text-xs text-muted-foreground">{getName(kelasList, siswa.kelas_id)}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="text-center">
-                        <p className="font-semibold">{laporanList.length}</p>
-                        <p className="text-xs text-muted-foreground">Pertemuan</p>
+                    <div className="flex items-center gap-3">
+                      {/* Stats */}
+                      <div className="flex items-center gap-4 text-sm mr-2">
+                        <div className="text-center">
+                          <p className="font-semibold">{laporanList.length}</p>
+                          <p className="text-xs text-muted-foreground">Pertemuan</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-semibold text-primary">{stats.hadir}</p>
+                          <p className="text-xs text-muted-foreground">Hadir</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-semibold">{stats.avgNilai ?? "-"}</p>
+                          <p className="text-xs text-muted-foreground">Rata Nilai</p>
+                        </div>
                       </div>
-                      <div className="text-center">
-                        <p className="font-semibold text-primary">{stats.hadir}</p>
-                        <p className="text-xs text-muted-foreground">Hadir</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-semibold">{stats.avgNilai ?? "-"}</p>
-                        <p className="text-xs text-muted-foreground">Rata Nilai</p>
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 gap-1.5 text-xs"
+                          onClick={() => handleDownloadPDF(siswa, laporanList)}
+                        >
+                          <FileDown className="w-3.5 h-3.5" />
+                          PDF
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 gap-1.5 text-xs bg-green-50 hover:bg-green-100 border-green-200 text-green-700"
+                          onClick={() => handleShareWA(siswa, laporanList)}
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          WhatsApp
+                        </Button>
                       </div>
                     </div>
                   </div>
