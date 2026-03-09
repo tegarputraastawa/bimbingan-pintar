@@ -1,7 +1,9 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, UserPlus, Users, CreditCard, FileBarChart, GraduationCap, Calendar, DoorOpen, UserCheck, ClipboardList, Library } from "lucide-react";
+import { LayoutDashboard, UserPlus, Users, CreditCard, FileBarChart, GraduationCap, Calendar, DoorOpen, UserCheck, ClipboardList, Library, Shield } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { canAccess } from "@/lib/roleAccess";
 
-const links = [
+const allLinks = [
   { to: "/", icon: LayoutDashboard, label: "Home" },
   { to: "/pendaftaran", icon: UserPlus, label: "Daftar" },
   { to: "/siswa", icon: Users, label: "Siswa" },
@@ -13,10 +15,15 @@ const links = [
   { to: "/orang-tua", icon: UserCheck, label: "Ortu" },
   { to: "/perkembangan", icon: ClipboardList, label: "Report" },
   { to: "/laporan", icon: FileBarChart, label: "Laporan" },
+  { to: "/users", icon: Shield, label: "Users" },
 ];
 
 export default function MobileNav() {
   const location = useLocation();
+  const { role } = useAuth();
+
+  const links = allLinks.filter((link) => canAccess(role, link.to));
+
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
       <div className="flex justify-around py-2 overflow-x-auto">
