@@ -227,11 +227,12 @@ export default function Pembayaran() {
                 type="number"
                 placeholder="0"
                 value={form.jumlah}
-                onChange={(e) => setForm({ ...form, jumlah: e.target.value })}
+                onChange={(e) => handleJumlahChange(e.target.value)}
+                max={maxJumlah > 0 ? maxJumlah : undefined}
               />
               {maxJumlah > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  Bayar minimal Rp 0, maksimal {formatRupiah(maxJumlah)}. Status otomatis menjadi Lunas jika mencapai biaya kelas.
+                  Maksimal: {formatRupiah(maxJumlah)}. Status otomatis menjadi Lunas jika mencapai biaya kelas.
                 </p>
               )}
             </div>
