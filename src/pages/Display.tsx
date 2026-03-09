@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Clock, BookOpen, ChevronLeft, ChevronRight, X, MapPin, CalendarDays, Monitor, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 
 type Jadwal = { id: string; tutor_id: string; kelas_id: string; ruangan: string; tanggal: string; jam_mulai: string; jam_selesai: string };
