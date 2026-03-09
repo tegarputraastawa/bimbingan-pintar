@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CreditCard, AlertCircle, CheckCircle, Clock, Pencil, Calendar } from "lucide-react";
+import { CreditCard, AlertCircle, CheckCircle, Clock, Pencil, Calendar, MessageCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO, differenceInDays } from "date-fns";
