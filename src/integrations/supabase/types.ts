@@ -301,6 +301,7 @@ export type Database = {
           bidang: string
           created_at: string
           email: string
+          foto_url: string | null
           id: string
           nama: string
           telepon: string
@@ -310,6 +311,7 @@ export type Database = {
           bidang: string
           created_at?: string
           email?: string
+          foto_url?: string | null
           id?: string
           nama: string
           telepon: string
@@ -319,6 +321,7 @@ export type Database = {
           bidang?: string
           created_at?: string
           email?: string
+          foto_url?: string | null
           id?: string
           nama?: string
           telepon?: string
