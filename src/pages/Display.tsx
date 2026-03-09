@@ -177,13 +177,13 @@ export default function Display() {
                       </div>
                       {/* Tutor with photo */}
                       <div className={`flex items-center gap-2 ${isOngoing ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                        <Avatar className="w-6 h-6 border border-border">
-                          <AvatarImage src={tutor?.foto_url || undefined} />
-                          <AvatarFallback className={`text-[10px] ${isOngoing ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/10 text-primary"}`}>
+                        <Avatar className="w-10 h-10 border-2 border-border">
+                          <AvatarImage src={tutor?.foto_url || undefined} className="object-cover" />
+                          <AvatarFallback className={`text-xs font-bold ${isOngoing ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/10 text-primary"}`}>
                             {tutor?.nama?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "?"}
                           </AvatarFallback>
                         </Avatar>
-                        <span>{tutor?.nama || "-"}</span>
+                        <span className="font-medium">{tutor?.nama || "-"}</span>
                       </div>
                       <p className={`${isOngoing ? "text-primary-foreground/80" : "text-muted-foreground"}`}>📍 {j.ruangan}</p>
                       {isOngoing && <Badge className="bg-primary-foreground/20 text-primary-foreground text-[10px]">SEDANG BERLANGSUNG</Badge>}
