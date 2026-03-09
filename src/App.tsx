@@ -15,6 +15,7 @@ import Display from "./pages/Display";
 import Ruangan from "./pages/Ruangan";
 import OrangTua from "./pages/OrangTua";
 import LaporanPerkembangan from "./pages/LaporanPerkembangan";
+import Kelas from "./pages/Kelas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/" element={<Dashboard />} />
             <Route path="/pendaftaran" element={<Pendaftaran />} />
             <Route path="/siswa" element={<DataSiswa />} />
+            <Route path="/kelas" element={<Kelas />} />
             <Route path="/pembayaran" element={<Pembayaran />} />
             <Route path="/tutor" element={<Tutor />} />
             <Route path="/ruangan" element={<Ruangan />} />

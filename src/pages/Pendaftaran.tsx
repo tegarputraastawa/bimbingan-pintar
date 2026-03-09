@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,33 +6,97 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { getKelasList, saveSiswa, formatRupiah, generateId } from "@/lib/store";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { UserPlus } from "lucide-react";
+import { UserPlus, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+
+type Kelas = {
+  id: string;
+  nama: string;
+  harga: number;
+  deskripsi: string;
+  aktif: boolean;
+};
 
 export default function Pendaftaran() {
   const navigate = useNavigate();
-  const kelasList = getKelasList();
-  const [form, setForm] = useState({ nama: "", email: "", telepon: "", alamat: "", kelasId: "" });
+  const [kelasList, setKelasList] = useState<Kelas[]>([]);
+  const [form, setForm] = useState({ 
+    nama: "", 
+    email: "", 
+    telepon: "", 
+    alamat: "", 
+    kelasId: "" 
+  });
+  const [tanggalMulai, setTanggalMulai] = useState<Date>();
+  const [tanggalAkhir, setTanggalAkhir] = useState<Date>();
+
+  useEffect(() => {
+    loadKelas();
+  }, []);
+
+  const loadKelas = async () => {
+    const { data, error } = await supabase
+      .from("kelas")
+      .select("*")
+      .eq("aktif", true)
+      .order("nama");
+    
+    if (error) {
+      toast.error("Gagal memuat data kelas");
+      return;
+    }
+    setKelasList(data || []);
+  };
+
+  const formatRupiah = (num: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(num);
+  };
 
   const selectedKelas = kelasList.find((k) => k.id === form.kelasId);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nama || !form.telepon || !form.kelasId) {
       toast.error("Mohon lengkapi data yang wajib diisi");
       return;
     }
-    saveSiswa({
-      id: generateId(),
+
+    if (!tanggalMulai || !tanggalAkhir) {
+      toast.error("Mohon pilih tanggal mulai dan tanggal akhir");
+      return;
+    }
+
+    if (tanggalAkhir < tanggalMulai) {
+      toast.error("Tanggal akhir harus setelah tanggal mulai");
+      return;
+    }
+
+    const { error } = await supabase.from("siswa").insert({
       nama: form.nama,
       email: form.email,
       telepon: form.telepon,
       alamat: form.alamat,
-      kelasId: form.kelasId,
-      tanggalDaftar: new Date().toISOString(),
+      kelas_id: form.kelasId,
+      tanggal_mulai: format(tanggalMulai, "yyyy-MM-dd"),
+      tanggal_akhir: format(tanggalAkhir, "yyyy-MM-dd"),
       aktif: true,
     });
+
+    if (error) {
+      toast.error("Gagal mendaftarkan siswa");
+      return;
+    }
+
     toast.success(`${form.nama} berhasil didaftarkan!`);
     navigate("/siswa");
   };
@@ -70,6 +134,61 @@ export default function Pendaftaran() {
             <div className="space-y-2">
               <Label htmlFor="alamat">Alamat</Label>
               <Textarea id="alamat" placeholder="Alamat lengkap" value={form.alamat} onChange={(e) => setForm({ ...form, alamat: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Tanggal Mulai *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !tanggalMulai && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {tanggalMulai ? format(tanggalMulai, "PPP", { locale: localeId }) : "Pilih tanggal"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={tanggalMulai}
+                      onSelect={setTanggalMulai}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
+                <Label>Tanggal Akhir *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !tanggalAkhir && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {tanggalAkhir ? format(tanggalAkhir, "PPP", { locale: localeId }) : "Pilih tanggal"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={tanggalAkhir}
+                      onSelect={setTanggalAkhir}
+                      disabled={(date) => tanggalMulai ? date < tanggalMulai : false}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Pilih Kelas *</Label>

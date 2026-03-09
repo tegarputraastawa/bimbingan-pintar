@@ -52,6 +52,7 @@ export type Database = {
       }
       kelas: {
         Row: {
+          aktif: boolean
           created_at: string
           deskripsi: string
           harga: number
@@ -60,6 +61,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aktif?: boolean
           created_at?: string
           deskripsi?: string
           harga: number
@@ -68,6 +70,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aktif?: boolean
           created_at?: string
           deskripsi?: string
           harga?: number
@@ -248,7 +251,9 @@ export type Database = {
           id: string
           kelas_id: string
           nama: string
+          tanggal_akhir: string | null
           tanggal_daftar: string
+          tanggal_mulai: string | null
           telepon: string
           updated_at: string
         }
@@ -260,7 +265,9 @@ export type Database = {
           id?: string
           kelas_id: string
           nama: string
+          tanggal_akhir?: string | null
           tanggal_daftar?: string
+          tanggal_mulai?: string | null
           telepon: string
           updated_at?: string
         }
@@ -272,7 +279,9 @@ export type Database = {
           id?: string
           kelas_id?: string
           nama?: string
+          tanggal_akhir?: string | null
           tanggal_daftar?: string
+          tanggal_mulai?: string | null
           telepon?: string
           updated_at?: string
         }
