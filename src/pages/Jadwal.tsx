@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  getJadwalList, saveJadwal, deleteJadwal, getTutorList, getKelasList,
+  getJadwalList, saveJadwal, deleteJadwal,
   getLiburList, saveLibur, deleteLibur, generateId, formatTanggalShort,
   type Jadwal as JadwalType,
 } from "@/lib/store";
 import { checkRoomConflict, getRuanganAktif } from "@/lib/ruangan";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Trash2, Pencil, Clock, ChevronLeft, ChevronRight, GraduationCap, Ban, Tv, DoorOpen } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
