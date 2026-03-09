@@ -277,45 +277,56 @@ export default function Jadwal() {
           <Button variant="outline" size="sm" onClick={() => navigate("/display")} className="gap-1.5">
             <Tv className="w-4 h-4" /> Mode TV
           </Button>
-          <Dialog open={liburOpen} onOpenChange={setLiburOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10">
-                <Ban className="w-4 h-4" /> Hari Libur
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Tambah Hari Libur</DialogTitle></DialogHeader>
-              <form onSubmit={handleLiburSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Tanggal *</Label>
-                  <Input type="date" value={liburForm.tanggal} onChange={(e) => setLiburForm({ ...liburForm, tanggal: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Keterangan *</Label>
-                  <Input placeholder="Libur Nasional, dll" value={liburForm.keterangan} onChange={(e) => setLiburForm({ ...liburForm, keterangan: e.target.value })} />
-                </div>
-                <Button type="submit" className="w-full">Tambah Hari Libur</Button>
-              </form>
-              {liburList.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <p className="text-sm font-medium">Daftar Hari Libur:</p>
-                  {[...liburList].sort((a, b) => a.tanggal.localeCompare(b.tanggal)).map((l) => (
-                    <div key={l.id} className="flex items-center justify-between py-1.5 px-2 rounded bg-destructive/10 text-sm">
-                      <span><span className="font-medium text-destructive">{formatTanggalShort(l.tanggal)}</span> — {l.keterangan}</span>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => hapusLibur(l.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
-          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setForm({ ...emptyForm }); }}>
-            <DialogTrigger asChild>
-              <Button><Plus className="w-4 h-4 mr-2" />Tambah Jadwal</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Tambah Jadwal Baru</DialogTitle></DialogHeader>
-              {renderForm(handleSubmit, false)}
+          {isWritable && (
+            <KirimJadwalPDF
+              jadwalHariIni={(jadwalByDate[today] || [])}
+              tutors={tutors}
+              kelas={kelas}
+              tanggal={today}
+            />
+          )}
+          {isWritable && (
+            <Dialog open={liburOpen} onOpenChange={setLiburOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <Ban className="w-4 h-4" /> Hari Libur
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Tambah Hari Libur</DialogTitle></DialogHeader>
+                <form onSubmit={handleLiburSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Tanggal *</Label>
+                    <Input type="date" value={liburForm.tanggal} onChange={(e) => setLiburForm({ ...liburForm, tanggal: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Keterangan *</Label>
+                    <Input placeholder="Libur Nasional, dll" value={liburForm.keterangan} onChange={(e) => setLiburForm({ ...liburForm, keterangan: e.target.value })} />
+                  </div>
+                  <Button type="submit" className="w-full">Tambah Hari Libur</Button>
+                </form>
+                {liburList.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm font-medium">Daftar Hari Libur:</p>
+                    {[...liburList].sort((a, b) => a.tanggal.localeCompare(b.tanggal)).map((l) => (
+                      <div key={l.id} className="flex items-center justify-between py-1.5 px-2 rounded bg-destructive/10 text-sm">
+                        <span><span className="font-medium text-destructive">{formatTanggalShort(l.tanggal)}</span> — {l.keterangan}</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => hapusLibur(l.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+          )}
+          {isWritable && (
+            <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setForm({ ...emptyForm }); }}>
+              <DialogTrigger asChild>
+                <Button><Plus className="w-4 h-4 mr-2" />Tambah Jadwal</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Tambah Jadwal Baru</DialogTitle></DialogHeader>
+                {renderForm(handleSubmit, false)}
             </DialogContent>
           </Dialog>
         </div>
