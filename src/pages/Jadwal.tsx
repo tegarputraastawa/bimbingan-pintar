@@ -71,7 +71,7 @@ export default function Jadwal() {
     const [jadwalRes, liburRes, tutorRes, kelasRes, ruanganRes] = await Promise.all([
       supabase.from("jadwal").select("*"),
       supabase.from("libur").select("*"),
-      supabase.from("tutor").select("id, nama, bidang"),
+      supabase.from("tutor").select("id, nama, bidang, email, telepon"),
       supabase.from("kelas").select("id, nama"),
       getRuanganAktif(),
     ]);
