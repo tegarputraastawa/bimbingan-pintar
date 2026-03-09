@@ -15,10 +15,52 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
+type Kelas = {
+  id: string;
+  nama: string;
+  harga: number;
+  deskripsi: string;
+  aktif: boolean;
+};
+
 export default function Pendaftaran() {
   const navigate = useNavigate();
-  const kelasList = getKelasList();
-  const [form, setForm] = useState({ nama: "", email: "", telepon: "", alamat: "", kelasId: "" });
+  const [kelasList, setKelasList] = useState<Kelas[]>([]);
+  const [form, setForm] = useState({ 
+    nama: "", 
+    email: "", 
+    telepon: "", 
+    alamat: "", 
+    kelasId: "" 
+  });
+  const [tanggalMulai, setTanggalMulai] = useState<Date>();
+  const [tanggalAkhir, setTanggalAkhir] = useState<Date>();
+
+  useEffect(() => {
+    loadKelas();
+  }, []);
+
+  const loadKelas = async () => {
+    const { data, error } = await supabase
+      .from("kelas")
+      .select("*")
+      .eq("aktif", true)
+      .order("nama");
+    
+    if (error) {
+      toast.error("Gagal memuat data kelas");
+      return;
+    }
+    setKelasList(data || []);
+  };
+
+  const formatRupiah = (num: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(num);
+  };
 
   const selectedKelas = kelasList.find((k) => k.id === form.kelasId);
 
