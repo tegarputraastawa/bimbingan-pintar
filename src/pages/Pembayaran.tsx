@@ -106,6 +106,12 @@ export default function Pembayaran() {
     const kelas = siswa ? kelasList.find((k) => k.id === siswa.kelas_id) : null;
     const hargaKelas = kelas?.harga || 0;
 
+    // Validasi: tidak boleh melebihi harga kelas
+    if (hargaKelas > 0 && jumlah > hargaKelas) {
+      toast.error(`Jumlah pembayaran tidak boleh melebihi biaya kelas: ${formatRupiah(hargaKelas)}`);
+      return;
+    }
+
     // Tentukan status: lunas jika jumlah >= harga kelas
     const newStatus = jumlah >= hargaKelas ? "lunas" : "belum_lunas";
 
@@ -129,6 +135,16 @@ export default function Pembayaran() {
     setEditOpen(false);
     setEditId(null);
     setRefresh((r) => r + 1);
+  };
+
+  const handleJumlahChange = (val: string) => {
+    const num = Number(val);
+    if (maxJumlah > 0 && num > maxJumlah) {
+      toast.error(`Jumlah tidak boleh melebihi biaya kelas: ${formatRupiah(maxJumlah)}`);
+      setForm({ ...form, jumlah: String(maxJumlah) });
+      return;
+    }
+    setForm({ ...form, jumlah: val });
   };
 
   // Filter pembayaran
@@ -211,11 +227,12 @@ export default function Pembayaran() {
                 type="number"
                 placeholder="0"
                 value={form.jumlah}
-                onChange={(e) => setForm({ ...form, jumlah: e.target.value })}
+                onChange={(e) => handleJumlahChange(e.target.value)}
+                max={maxJumlah > 0 ? maxJumlah : undefined}
               />
               {maxJumlah > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  Bayar minimal Rp 0, maksimal {formatRupiah(maxJumlah)}. Status otomatis menjadi Lunas jika mencapai biaya kelas.
+                  Maksimal: {formatRupiah(maxJumlah)}. Status otomatis menjadi Lunas jika mencapai biaya kelas.
                 </p>
               )}
             </div>
