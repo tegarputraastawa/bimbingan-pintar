@@ -107,7 +107,7 @@ export default function Display() {
           </div>
           <div className="flex items-center gap-1">
             <Button variant="outline" size="icon" onClick={prevWeek}><ChevronLeft className="w-4 h-4" /></Button>
-            <Button variant="outline" size="sm" onClick={() => setWeekRef(new Date())}>Hari Ini</Button>
+            <Button variant="default" size="sm" className="font-bold px-4" onClick={() => setWeekRef(new Date())}>Hari Ini</Button>
             <Button variant="outline" size="icon" onClick={nextWeek}><ChevronRight className="w-4 h-4" /></Button>
           </div>
           <Button variant="ghost" size="icon" onClick={() => navigate("/jadwal")} title="Kembali"><X className="w-5 h-5" /></Button>
