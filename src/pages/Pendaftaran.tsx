@@ -135,6 +135,61 @@ export default function Pendaftaran() {
               <Label htmlFor="alamat">Alamat</Label>
               <Textarea id="alamat" placeholder="Alamat lengkap" value={form.alamat} onChange={(e) => setForm({ ...form, alamat: e.target.value })} />
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Tanggal Mulai *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !tanggalMulai && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {tanggalMulai ? format(tanggalMulai, "PPP", { locale: localeId }) : "Pilih tanggal"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={tanggalMulai}
+                      onSelect={setTanggalMulai}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2">
+                <Label>Tanggal Akhir *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !tanggalAkhir && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {tanggalAkhir ? format(tanggalAkhir, "PPP", { locale: localeId }) : "Pilih tanggal"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={tanggalAkhir}
+                      onSelect={setTanggalAkhir}
+                      disabled={(date) => tanggalMulai ? date < tanggalMulai : false}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
             <div className="space-y-2">
               <Label>Pilih Kelas *</Label>
               <Select value={form.kelasId} onValueChange={(v) => setForm({ ...form, kelasId: v })}>
