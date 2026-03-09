@@ -1,15 +1,11 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  getJadwalList, saveJadwal, deleteJadwal,
-  getLiburList, saveLibur, deleteLibur, generateId, formatTanggalShort,
-  type Jadwal as JadwalType,
-} from "@/lib/store";
-import { checkRoomConflict, getRuanganAktif } from "@/lib/ruangan";
+import { formatTanggalShort } from "@/lib/store";
+import { getRuanganAktif } from "@/lib/ruangan";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Trash2, Pencil, Clock, ChevronLeft, ChevronRight, GraduationCap, Ban, Tv, DoorOpen } from "lucide-react";
@@ -48,9 +44,10 @@ const emptyForm = { tutorId: "", kelasId: "", ruangan: "", tanggal: "", jamMulai
 type RuanganDB = { id: string; nama: string; kapasitas: number; status: string };
 type TutorDB = { id: string; nama: string; bidang: string };
 type KelasDB = { id: string; nama: string };
+type JadwalDB = { id: string; tutor_id: string; kelas_id: string; ruangan: string; tanggal: string; jam_mulai: string; jam_selesai: string };
+type LiburDB = { id: string; tanggal: string; keterangan: string };
 
 export default function Jadwal() {
-  const [refresh, setRefresh] = useState(0);
   const [weekRef, setWeekRef] = useState(new Date());
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -61,23 +58,27 @@ export default function Jadwal() {
   const [ruanganList, setRuanganList] = useState<RuanganDB[]>([]);
   const [tutors, setTutors] = useState<TutorDB[]>([]);
   const [kelas, setKelas] = useState<KelasDB[]>([]);
+  const [jadwalList, setJadwalList] = useState<JadwalDB[]>([]);
+  const [liburList, setLiburList] = useState<LiburDB[]>([]);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    getRuanganAktif().then(setRuanganList);
-    const fetchData = async () => {
-      const [tutorRes, kelasRes] = await Promise.all([
-        supabase.from("tutor").select("id, nama, bidang"),
-        supabase.from("kelas").select("id, nama"),
-      ]);
-      setTutors((tutorRes.data || []) as TutorDB[]);
-      setKelas((kelasRes.data || []) as KelasDB[]);
-    };
-    fetchData();
+  const fetchAll = useCallback(async () => {
+    const [jadwalRes, liburRes, tutorRes, kelasRes, ruanganRes] = await Promise.all([
+      supabase.from("jadwal").select("*"),
+      supabase.from("libur").select("*"),
+      supabase.from("tutor").select("id, nama, bidang"),
+      supabase.from("kelas").select("id, nama"),
+      getRuanganAktif(),
+    ]);
+    setJadwalList((jadwalRes.data || []) as JadwalDB[]);
+    setLiburList((liburRes.data || []) as LiburDB[]);
+    setTutors((tutorRes.data || []) as TutorDB[]);
+    setKelas((kelasRes.data || []) as KelasDB[]);
+    setRuanganList(ruanganRes);
   }, []);
 
-  const jadwalList = getJadwalList();
-  const liburList = getLiburList();
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
   const weekDates = useMemo(() => getWeekDates(weekRef), [weekRef]);
 
   const liburMap = useMemo(() => {
@@ -87,18 +88,26 @@ export default function Jadwal() {
   }, [liburList]);
 
   const jadwalByDate = useMemo(() => {
-    const m: Record<string, JadwalType[]> = {};
+    const m: Record<string, JadwalDB[]> = {};
     jadwalList.forEach((j) => {
       if (!m[j.tanggal]) m[j.tanggal] = [];
       m[j.tanggal].push(j);
     });
-    Object.values(m).forEach((arr) => arr.sort((a, b) => a.jamMulai.localeCompare(b.jamMulai)));
+    Object.values(m).forEach((arr) => arr.sort((a, b) => a.jam_mulai.localeCompare(b.jam_mulai)));
     return m;
   }, [jadwalList]);
 
   const prevWeek = () => { const d = new Date(weekRef); d.setDate(d.getDate() - 7); setWeekRef(d); };
   const nextWeek = () => { const d = new Date(weekRef); d.setDate(d.getDate() + 7); setWeekRef(d); };
   const goToday = () => setWeekRef(new Date());
+
+  const checkRoomConflict = (excludeId?: string) => {
+    return jadwalList.some((j) => {
+      if (excludeId && j.id === excludeId) return false;
+      if (j.ruangan !== form.ruangan || j.tanggal !== form.tanggal) return false;
+      return j.jam_mulai < form.jamSelesai && form.jamMulai < j.jam_selesai;
+    });
+  };
 
   const validate = (excludeId?: string) => {
     if (!form.tutorId || !form.kelasId || !form.ruangan || !form.tanggal || !form.jamMulai || !form.jamSelesai) {
@@ -109,64 +118,85 @@ export default function Jadwal() {
       toast.error("Jam selesai harus lebih besar dari jam mulai");
       return false;
     }
-    // Check room conflict
-    if (checkRoomConflict(form.ruangan, form.tanggal, form.jamMulai, form.jamSelesai, excludeId)) {
+    if (checkRoomConflict(excludeId)) {
       toast.error(`Ruangan "${form.ruangan}" sudah terpakai pada tanggal dan jam tersebut!`);
       return false;
     }
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    saveJadwal({ id: generateId(), ...form });
+    const { error } = await supabase.from("jadwal").insert({
+      tutor_id: form.tutorId,
+      kelas_id: form.kelasId,
+      ruangan: form.ruangan,
+      tanggal: form.tanggal,
+      jam_mulai: form.jamMulai,
+      jam_selesai: form.jamSelesai,
+    });
+    if (error) { toast.error("Gagal menyimpan: " + error.message); return; }
     toast.success("Jadwal berhasil ditambahkan!");
     setForm({ ...emptyForm });
     setOpen(false);
-    setRefresh((r) => r + 1);
+    fetchAll();
   };
 
-  const openEdit = (j: JadwalType) => {
+  const openEdit = (j: JadwalDB) => {
     setEditId(j.id);
-    setForm({ tutorId: j.tutorId, kelasId: j.kelasId, ruangan: j.ruangan, tanggal: j.tanggal, jamMulai: j.jamMulai, jamSelesai: j.jamSelesai });
+    setForm({ tutorId: j.tutor_id, kelasId: j.kelas_id, ruangan: j.ruangan, tanggal: j.tanggal, jamMulai: j.jam_mulai, jamSelesai: j.jam_selesai });
     setEditOpen(true);
   };
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editId || !validate(editId)) return;
-    saveJadwal({ id: editId, ...form });
+    const { error } = await supabase.from("jadwal").update({
+      tutor_id: form.tutorId,
+      kelas_id: form.kelasId,
+      ruangan: form.ruangan,
+      tanggal: form.tanggal,
+      jam_mulai: form.jamMulai,
+      jam_selesai: form.jamSelesai,
+    }).eq("id", editId);
+    if (error) { toast.error("Gagal memperbarui: " + error.message); return; }
     toast.success("Jadwal diperbarui!");
     setForm({ ...emptyForm });
     setEditOpen(false);
     setEditId(null);
-    setRefresh((r) => r + 1);
+    fetchAll();
   };
 
-  const hapus = (id: string) => {
-    deleteJadwal(id);
+  const hapus = async (id: string) => {
+    const { error } = await supabase.from("jadwal").delete().eq("id", id);
+    if (error) { toast.error("Gagal menghapus: " + error.message); return; }
     toast.success("Jadwal dihapus");
-    setRefresh((r) => r + 1);
+    fetchAll();
   };
 
-  const handleLiburSubmit = (e: React.FormEvent) => {
+  const handleLiburSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!liburForm.tanggal || !liburForm.keterangan) {
       toast.error("Lengkapi data hari libur");
       return;
     }
-    saveLibur({ id: generateId(), ...liburForm });
+    const { error } = await supabase.from("libur").insert({
+      tanggal: liburForm.tanggal,
+      keterangan: liburForm.keterangan,
+    });
+    if (error) { toast.error("Gagal menyimpan: " + error.message); return; }
     toast.success("Hari libur ditambahkan!");
     setLiburForm({ tanggal: "", keterangan: "" });
     setLiburOpen(false);
-    setRefresh((r) => r + 1);
+    fetchAll();
   };
 
-  const hapusLibur = (id: string) => {
-    deleteLibur(id);
+  const hapusLibur = async (id: string) => {
+    const { error } = await supabase.from("libur").delete().eq("id", id);
+    if (error) { toast.error("Gagal menghapus: " + error.message); return; }
     toast.success("Hari libur dihapus");
-    setRefresh((r) => r + 1);
+    fetchAll();
   };
 
   const today = new Date().toISOString().split("T")[0];
@@ -232,7 +262,7 @@ export default function Jadwal() {
   );
 
   return (
-    <div className="p-6 md:p-8 space-y-6 animate-fade-in" key={refresh}>
+    <div className="p-6 md:p-8 space-y-6 animate-fade-in">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Jadwal</h1>
@@ -264,7 +294,7 @@ export default function Jadwal() {
               {liburList.length > 0 && (
                 <div className="mt-4 space-y-2">
                   <p className="text-sm font-medium">Daftar Hari Libur:</p>
-                  {liburList.sort((a, b) => a.tanggal.localeCompare(b.tanggal)).map((l) => (
+                  {[...liburList].sort((a, b) => a.tanggal.localeCompare(b.tanggal)).map((l) => (
                     <div key={l.id} className="flex items-center justify-between py-1.5 px-2 rounded bg-destructive/10 text-sm">
                       <span><span className="font-medium text-destructive">{formatTanggalShort(l.tanggal)}</span> — {l.keterangan}</span>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => hapusLibur(l.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
@@ -338,8 +368,8 @@ export default function Jadwal() {
                   <p className="text-[11px] text-muted-foreground italic">Tidak ada jadwal</p>
                 )}
                 {items.map((j) => {
-                  const tutor = tutors.find((t) => t.id === j.tutorId);
-                  const k = kelas.find((k) => k.id === j.kelasId);
+                  const tutor = tutors.find((t) => t.id === j.tutor_id);
+                  const k = kelas.find((k) => k.id === j.kelas_id);
                   return (
                     <div key={j.id} className={`rounded-md p-2 text-[11px] space-y-0.5 ${isHoliday ? "bg-destructive/10 border border-destructive/20" : "bg-muted"}`}>
                       <div className="flex items-center justify-between">
@@ -364,7 +394,7 @@ export default function Jadwal() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 text-muted-foreground">
-                        <Clock className="w-3 h-3" />{j.jamMulai}-{j.jamSelesai}
+                        <Clock className="w-3 h-3" />{j.jam_mulai}-{j.jam_selesai}
                       </div>
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <GraduationCap className="w-3 h-3" />{tutor?.nama || "-"}
