@@ -1,9 +1,10 @@
-import { Users, UserCheck, UserX, CreditCard, TrendingUp, BookOpen, Calendar, Clock, GraduationCap, ChevronLeft, ChevronRight } from "lucide-react";
-import { getSiswaList, getPembayaranList, getKelasList, getJadwalList, getTutorList, getLiburList, formatRupiah, formatTanggalShort } from "@/lib/store";
+import { Users, UserCheck, UserX, CreditCard, TrendingUp, BookOpen, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { formatTanggalShort } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const HARI_LABEL: Record<number, string> = {
   0: "Minggu", 1: "Senin", 2: "Selasa", 3: "Rabu", 4: "Kamis", 5: "Jumat", 6: "Sabtu",
@@ -24,13 +25,48 @@ function getWeekDates(refDate: Date): string[] {
 }
 
 export default function Dashboard() {
-  const siswa = getSiswaList();
-  const pembayaran = getPembayaranList();
-  const kelas = getKelasList();
-  const jadwalList = getJadwalList();
-  const tutors = getTutorList();
-  const liburList = getLiburList();
+  const [siswa, setSiswa] = useState<any[]>([]);
+  const [pembayaran, setPembayaran] = useState<any[]>([]);
+  const [kelas, setKelas] = useState<any[]>([]);
+  const [jadwalList, setJadwalList] = useState<any[]>([]);
+  const [liburList, setLiburList] = useState<any[]>([]);
   const [weekRef, setWeekRef] = useState(new Date());
+
+  const formatRupiah = (num: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(num);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    const { data: siswaData } = await supabase.from("siswa").select("*");
+    const { data: pembayaranData } = await supabase.from("pembayaran").select("*");
+    const { data: kelasData } = await supabase.from("kelas").select("*");
+    const { data: jadwalData } = await supabase.from("jadwal").select("*");
+    const { data: liburData } = await supabase.from("libur").select("*");
+
+    setSiswa(siswaData || []);
+    setPembayaran(pembayaranData || []);
+    setKelas(kelasData || []);
+    setJadwalList(
+      (jadwalData || []).map((j: any) => ({
+        id: j.id,
+        tutorId: j.tutor_id,
+        kelasId: j.kelas_id,
+        ruangan: j.ruangan,
+        tanggal: j.tanggal,
+        jamMulai: j.jam_mulai,
+        jamSelesai: j.jam_selesai,
+      }))
+    );
+    setLiburList(liburData || []);
+  };
 
   const stats = useMemo(() => {
     const aktif = siswa.filter((s) => s.aktif).length;
@@ -76,7 +112,9 @@ export default function Dashboard() {
   const prevWeek = () => { const d = new Date(weekRef); d.setDate(d.getDate() - 7); setWeekRef(d); };
   const nextWeek = () => { const d = new Date(weekRef); d.setDate(d.getDate() + 7); setWeekRef(d); };
 
-  const recentSiswa = [...siswa].sort((a, b) => new Date(b.tanggalDaftar).getTime() - new Date(a.tanggalDaftar).getTime()).slice(0, 5);
+  const recentSiswa = [...siswa]
+    .sort((a, b) => new Date(b.tanggal_daftar).getTime() - new Date(a.tanggal_daftar).getTime())
+    .slice(0, 5);
 
   return (
     <div className="p-6 md:p-8 space-y-8 animate-fade-in">
@@ -167,7 +205,7 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-3">
                 {recentSiswa.map((s) => {
-                  const k = kelas.find((k) => k.id === s.kelasId);
+                  const k = kelas.find((k) => k.id === s.kelas_id);
                   return (
                     <div key={s.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                       <div>
@@ -188,17 +226,21 @@ export default function Dashboard() {
         <Card className="border-none shadow-sm">
           <CardHeader><CardTitle className="text-lg">Daftar Kelas & Harga</CardTitle></CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {kelas.map((k) => (
-                <div key={k.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                  <div>
-                    <p className="font-medium text-sm">{k.nama}</p>
-                    <p className="text-xs text-muted-foreground">{k.deskripsi}</p>
+            {kelas.length === 0 ? (
+              <p className="text-muted-foreground text-sm py-4">Belum ada kelas dibuat</p>
+            ) : (
+              <div className="space-y-3">
+                {kelas.map((k) => (
+                  <div key={k.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                    <div>
+                      <p className="font-medium text-sm">{k.nama}</p>
+                      <p className="text-xs text-muted-foreground">{k.deskripsi}</p>
+                    </div>
+                    <span className="font-semibold text-sm text-primary">{formatRupiah(k.harga)}</span>
                   </div>
-                  <span className="font-semibold text-sm text-primary">{formatRupiah(k.harga)}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
