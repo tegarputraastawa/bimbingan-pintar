@@ -47,6 +47,7 @@ export default function LaporanPerkembangan() {
   const [siswaList, setSiswaList] = useState<Siswa[]>([]);
   const [kelasList, setKelasList] = useState<Kelas[]>([]);
   const [tutorList, setTutorList] = useState<Tutor[]>([]);
+  const [orangTuaList, setOrangTuaList] = useState<OrangTua[]>([]);
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
