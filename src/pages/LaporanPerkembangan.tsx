@@ -62,16 +62,18 @@ export default function LaporanPerkembangan() {
 
   const fetchAll = async () => {
     setLoading(true);
-    const [laporan, siswa, kelas, tutor] = await Promise.all([
+    const [laporan, siswa, kelas, tutor, orangTua] = await Promise.all([
       supabase.from("laporan_perkembangan").select("*").order("tanggal", { ascending: false }),
       supabase.from("siswa").select("id, nama, aktif, kelas_id").order("nama"),
       supabase.from("kelas").select("id, nama").order("nama"),
       supabase.from("tutor").select("id, nama").order("nama"),
+      supabase.from("orang_tua").select("id, siswa_id, nama, telepon"),
     ]);
     setData(laporan.data || []);
     setSiswaList((siswa.data || []) as Siswa[]);
     setKelasList(kelas.data || []);
     setTutorList(tutor.data || []);
+    setOrangTuaList((orangTua.data || []) as OrangTua[]);
     setLoading(false);
   };
 
