@@ -391,6 +391,7 @@ export default function Jadwal() {
                     <div key={j.id} className={`rounded-md p-2 text-[11px] space-y-0.5 ${isHoliday ? "bg-destructive/10 border border-destructive/20" : "bg-muted"}`}>
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-xs">{k?.nama || "-"}</span>
+                        {isWritable && (
                         <div className="flex gap-0.5">
                           <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => openEdit(j)}><Pencil className="w-3 h-3" /></Button>
                           <AlertDialog>
@@ -409,6 +410,7 @@ export default function Jadwal() {
                             </AlertDialogContent>
                           </AlertDialog>
                         </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Clock className="w-3 h-3" />{j.jam_mulai}-{j.jam_selesai}
