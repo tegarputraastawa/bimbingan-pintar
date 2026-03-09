@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, ClipboardList, CheckCircle, XCircle, AlertTriangle, MinusCircle, Search, User, CalendarDays, BookOpen, TrendingUp } from "lucide-react";
+import { Plus, Trash2, Pencil, ClipboardList, CheckCircle, XCircle, AlertTriangle, MinusCircle, Search, User, CalendarDays, BookOpen, TrendingUp, FileDown, MessageCircle } from "lucide-react";
+import { buildReportText, shareWhatsApp, shareWhatsAppNoNumber, generatePDF } from "@/lib/laporanUtils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -30,6 +31,7 @@ type Laporan = {
 type Siswa = { id: string; nama: string; aktif: boolean; kelas_id: string };
 type Kelas = { id: string; nama: string };
 type Tutor = { id: string; nama: string };
+type OrangTua = { id: string; siswa_id: string; nama: string; telepon: string };
 
 const kehadiranConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive"; icon: typeof CheckCircle }> = {
   hadir: { label: "Hadir", variant: "default", icon: CheckCircle },
@@ -45,6 +47,7 @@ export default function LaporanPerkembangan() {
   const [siswaList, setSiswaList] = useState<Siswa[]>([]);
   const [kelasList, setKelasList] = useState<Kelas[]>([]);
   const [tutorList, setTutorList] = useState<Tutor[]>([]);
+  const [orangTuaList, setOrangTuaList] = useState<OrangTua[]>([]);
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -59,16 +62,18 @@ export default function LaporanPerkembangan() {
 
   const fetchAll = async () => {
     setLoading(true);
-    const [laporan, siswa, kelas, tutor] = await Promise.all([
+    const [laporan, siswa, kelas, tutor, orangTua] = await Promise.all([
       supabase.from("laporan_perkembangan").select("*").order("tanggal", { ascending: false }),
       supabase.from("siswa").select("id, nama, aktif, kelas_id").order("nama"),
       supabase.from("kelas").select("id, nama").order("nama"),
       supabase.from("tutor").select("id, nama").order("nama"),
+      supabase.from("orang_tua").select("id, siswa_id, nama, telepon"),
     ]);
     setData(laporan.data || []);
     setSiswaList((siswa.data || []) as Siswa[]);
     setKelasList(kelas.data || []);
     setTutorList(tutor.data || []);
+    setOrangTuaList((orangTua.data || []) as OrangTua[]);
     setLoading(false);
   };
 
@@ -165,6 +170,41 @@ export default function LaporanPerkembangan() {
     const nilaiList = laporanList.filter((l) => l.nilai !== null).map((l) => l.nilai as number);
     const avgNilai = nilaiList.length > 0 ? Math.round(nilaiList.reduce((a, b) => a + b, 0) / nilaiList.length) : null;
     return { hadir, total, avgNilai };
+  };
+
+  const buildSiswaReport = (siswa: Siswa, laporanList: Laporan[]) => {
+    const stats = getSiswaStats(laporanList);
+    return {
+      siswa_nama: siswa.nama,
+      kelas_nama: getName(kelasList, siswa.kelas_id),
+      total_pertemuan: stats.total,
+      total_hadir: stats.hadir,
+      rata_nilai: stats.avgNilai,
+      laporan: laporanList.map((l) => ({
+        tanggal: l.tanggal,
+        kehadiran: l.kehadiran,
+        nilai: l.nilai,
+        catatan: l.catatan,
+        kelas_nama: getName(kelasList, l.kelas_id),
+        tutor_nama: getName(tutorList, l.tutor_id),
+      })),
+    };
+  };
+
+  const handleShareWA = (siswa: Siswa, laporanList: Laporan[]) => {
+    const report = buildSiswaReport(siswa, laporanList);
+    const text = buildReportText(report);
+    const parent = orangTuaList.find((p) => p.siswa_id === siswa.id && p.telepon);
+    if (parent?.telepon) {
+      shareWhatsApp(parent.telepon, text);
+    } else {
+      shareWhatsAppNoNumber(text);
+    }
+  };
+
+  const handleDownloadPDF = (siswa: Siswa, laporanList: Laporan[]) => {
+    const report = buildSiswaReport(siswa, laporanList);
+    generatePDF(report);
   };
 
   const renderForm = (onSubmit: (e: React.FormEvent) => void, isEdit: boolean) => (
@@ -408,18 +448,42 @@ export default function LaporanPerkembangan() {
                         <p className="text-xs text-muted-foreground">{getName(kelasList, siswa.kelas_id)}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="text-center">
-                        <p className="font-semibold">{laporanList.length}</p>
-                        <p className="text-xs text-muted-foreground">Pertemuan</p>
+                    <div className="flex items-center gap-3">
+                      {/* Stats */}
+                      <div className="flex items-center gap-4 text-sm mr-2">
+                        <div className="text-center">
+                          <p className="font-semibold">{laporanList.length}</p>
+                          <p className="text-xs text-muted-foreground">Pertemuan</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-semibold text-primary">{stats.hadir}</p>
+                          <p className="text-xs text-muted-foreground">Hadir</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="font-semibold">{stats.avgNilai ?? "-"}</p>
+                          <p className="text-xs text-muted-foreground">Rata Nilai</p>
+                        </div>
                       </div>
-                      <div className="text-center">
-                        <p className="font-semibold text-primary">{stats.hadir}</p>
-                        <p className="text-xs text-muted-foreground">Hadir</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-semibold">{stats.avgNilai ?? "-"}</p>
-                        <p className="text-xs text-muted-foreground">Rata Nilai</p>
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 gap-1.5 text-xs"
+                          onClick={() => handleDownloadPDF(siswa, laporanList)}
+                        >
+                          <FileDown className="w-3.5 h-3.5" />
+                          PDF
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 gap-1.5 text-xs bg-green-50 hover:bg-green-100 border-green-200 text-green-700"
+                          onClick={() => handleShareWA(siswa, laporanList)}
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          WhatsApp
+                        </Button>
                       </div>
                     </div>
                   </div>
