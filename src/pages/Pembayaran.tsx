@@ -71,15 +71,17 @@ export default function Pembayaran() {
   }, [refresh]);
 
   const loadData = async () => {
-    const [pembayaranRes, siswaRes, kelasRes] = await Promise.all([
+    const [pembayaranRes, siswaRes, kelasRes, orangTuaRes] = await Promise.all([
       supabase.from("pembayaran").select("*").order("tanggal", { ascending: false }),
       supabase.from("siswa").select("id, nama, kelas_id"),
       supabase.from("kelas").select("id, nama, harga"),
+      supabase.from("orang_tua").select("id, siswa_id, nama, telepon, hubungan"),
     ]);
 
     if (pembayaranRes.data) setPembayaranList(pembayaranRes.data);
     if (siswaRes.data) setSiswaList(siswaRes.data);
     if (kelasRes.data) setKelasList(kelasRes.data);
+    if (orangTuaRes.data) setOrangTuaList(orangTuaRes.data);
   };
 
   const formatRupiah = (num: number) => {
