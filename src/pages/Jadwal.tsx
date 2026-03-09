@@ -64,6 +64,8 @@ export default function Jadwal() {
   const [jadwalList, setJadwalList] = useState<JadwalDB[]>([]);
   const [liburList, setLiburList] = useState<LiburDB[]>([]);
   const navigate = useNavigate();
+  const { role } = useAuth();
+  const isWritable = canWrite(role, "jadwal");
 
   const fetchAll = useCallback(async () => {
     const [jadwalRes, liburRes, tutorRes, kelasRes, ruanganRes] = await Promise.all([
