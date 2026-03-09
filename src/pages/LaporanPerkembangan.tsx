@@ -414,7 +414,7 @@ export default function LaporanPerkembangan() {
                         <p className="text-xs text-muted-foreground">Pertemuan</p>
                       </div>
                       <div className="text-center">
-                        <p className="font-semibold text-green-600">{stats.hadir}</p>
+                        <p className="font-semibold text-primary">{stats.hadir}</p>
                         <p className="text-xs text-muted-foreground">Hadir</p>
                       </div>
                       <div className="text-center">
