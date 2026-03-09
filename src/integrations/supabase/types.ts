@@ -186,9 +186,12 @@ export type Database = {
           jumlah: number
           keterangan: string
           metode: string
+          periode_akhir: string | null
+          periode_mulai: string | null
           siswa_id: string
           status: string
           tanggal: string
+          tanggal_jatuh_tempo: string | null
           updated_at: string
         }
         Insert: {
@@ -197,9 +200,12 @@ export type Database = {
           jumlah: number
           keterangan?: string
           metode: string
+          periode_akhir?: string | null
+          periode_mulai?: string | null
           siswa_id: string
           status: string
           tanggal?: string
+          tanggal_jatuh_tempo?: string | null
           updated_at?: string
         }
         Update: {
@@ -208,9 +214,12 @@ export type Database = {
           jumlah?: number
           keterangan?: string
           metode?: string
+          periode_akhir?: string | null
+          periode_mulai?: string | null
           siswa_id?: string
           status?: string
           tanggal?: string
+          tanggal_jatuh_tempo?: string | null
           updated_at?: string
         }
         Relationships: []
