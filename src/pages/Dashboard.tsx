@@ -1,9 +1,10 @@
-import { Users, UserCheck, UserX, CreditCard, TrendingUp, BookOpen, Calendar, Clock, GraduationCap, ChevronLeft, ChevronRight } from "lucide-react";
-import { getSiswaList, getPembayaranList, getKelasList, getJadwalList, getTutorList, getLiburList, formatRupiah, formatTanggalShort } from "@/lib/store";
+import { Users, UserCheck, UserX, CreditCard, TrendingUp, BookOpen, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { formatTanggalShort } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const HARI_LABEL: Record<number, string> = {
   0: "Minggu", 1: "Senin", 2: "Selasa", 3: "Rabu", 4: "Kamis", 5: "Jumat", 6: "Sabtu",
