@@ -172,6 +172,41 @@ export default function LaporanPerkembangan() {
     return { hadir, total, avgNilai };
   };
 
+  const buildSiswaReport = (siswa: Siswa, laporanList: Laporan[]) => {
+    const stats = getSiswaStats(laporanList);
+    return {
+      siswa_nama: siswa.nama,
+      kelas_nama: getName(kelasList, siswa.kelas_id),
+      total_pertemuan: stats.total,
+      total_hadir: stats.hadir,
+      rata_nilai: stats.avgNilai,
+      laporan: laporanList.map((l) => ({
+        tanggal: l.tanggal,
+        kehadiran: l.kehadiran,
+        nilai: l.nilai,
+        catatan: l.catatan,
+        kelas_nama: getName(kelasList, l.kelas_id),
+        tutor_nama: getName(tutorList, l.tutor_id),
+      })),
+    };
+  };
+
+  const handleShareWA = (siswa: Siswa, laporanList: Laporan[]) => {
+    const report = buildSiswaReport(siswa, laporanList);
+    const text = buildReportText(report);
+    const parent = orangTuaList.find((p) => p.siswa_id === siswa.id && p.telepon);
+    if (parent?.telepon) {
+      shareWhatsApp(parent.telepon, text);
+    } else {
+      shareWhatsAppNoNumber(text);
+    }
+  };
+
+  const handleDownloadPDF = (siswa: Siswa, laporanList: Laporan[]) => {
+    const report = buildSiswaReport(siswa, laporanList);
+    generatePDF(report);
+  };
+
   const renderForm = (onSubmit: (e: React.FormEvent) => void, isEdit: boolean) => (
     <form onSubmit={onSubmit} className="space-y-4">
       {!isEdit && (
