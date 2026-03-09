@@ -343,32 +343,30 @@ function WeekView({
                 return (
                   <div
                     key={j.id}
-                    className={`rounded-lg overflow-hidden text-xs transition-all ${
+                    className={`rounded-lg p-3 text-xs space-y-2 transition-all ${
                       isOngoing
-                        ? "ring-2 ring-primary shadow-lg scale-[1.02]"
+                        ? "bg-primary text-primary-foreground ring-2 ring-primary shadow-lg scale-[1.02]"
                         : isHoliday
                         ? "bg-destructive/10 border border-destructive/20"
                         : "bg-card border border-border shadow-sm"
                     }`}
                   >
-                    {/* Mini tutor photo */}
-                    {tutor?.foto_url && (
-                      <div className="w-full h-16 overflow-hidden">
-                        <img src={tutor.foto_url} alt={tutor.nama} className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                    <div className={`p-2.5 space-y-1.5 ${isOngoing ? "bg-primary text-primary-foreground" : ""}`}>
-                      <p className="font-bold text-sm leading-tight">{k?.nama || "-"}</p>
-                      <div className={`flex items-center gap-1 ${isOngoing ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                        <Clock className="w-3 h-3" />
-                        <span className="font-medium">{j.jam_mulai} - {j.jam_selesai}</span>
-                      </div>
-                      <p className={`font-medium ${isOngoing ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                        {tutor?.nama || "-"}
-                      </p>
-                      <p className={`${isOngoing ? "text-primary-foreground/80" : "text-muted-foreground"}`}>📍 {j.ruangan}</p>
-                      {isOngoing && <Badge className="bg-primary-foreground/20 text-primary-foreground text-[10px] border-0">BERLANGSUNG</Badge>}
+                    <p className="font-bold text-sm leading-tight">{k?.nama || "-"}</p>
+                    <div className={`flex items-center gap-1 ${isOngoing ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                      <Clock className="w-3 h-3" />
+                      <span className="font-medium">{j.jam_mulai} - {j.jam_selesai}</span>
                     </div>
+                    <div className={`flex items-center gap-2 ${isOngoing ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                      <Avatar className="w-6 h-6 border border-border">
+                        <AvatarImage src={tutor?.foto_url || undefined} className="object-cover" />
+                        <AvatarFallback className={`text-[10px] ${isOngoing ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/10 text-primary"}`}>
+                          {tutor?.nama?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>{tutor?.nama || "-"}</span>
+                    </div>
+                    <p className={`${isOngoing ? "text-primary-foreground/80" : "text-muted-foreground"}`}>📍 {j.ruangan}</p>
+                    {isOngoing && <Badge className="bg-primary-foreground/20 text-primary-foreground text-[10px] border-0">BERLANGSUNG</Badge>}
                   </div>
                 );
               })}
