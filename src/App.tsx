@@ -15,6 +15,7 @@ import Display from "./pages/Display";
 import Ruangan from "./pages/Ruangan";
 import OrangTua from "./pages/OrangTua";
 import LaporanPerkembangan from "./pages/LaporanPerkembangan";
+import Kelas from "./pages/Kelas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
