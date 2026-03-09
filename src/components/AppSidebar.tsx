@@ -1,22 +1,29 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { LayoutDashboard, UserPlus, Users, CreditCard, FileBarChart, GraduationCap, Calendar, BookOpen, DoorOpen, UserCheck, ClipboardList, Library } from "lucide-react";
+import { LayoutDashboard, UserPlus, Users, CreditCard, FileBarChart, GraduationCap, Calendar, BookOpen, DoorOpen, UserCheck, ClipboardList, Library, Shield, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { canAccess, ADMIN_ROLES } from "@/lib/roleAccess";
+import { Button } from "@/components/ui/button";
 
-const links = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/pendaftaran", icon: UserPlus, label: "Pendaftaran" },
-  { to: "/siswa", icon: Users, label: "Data Siswa" },
-  { to: "/kelas", icon: Library, label: "Kelas" },
-  { to: "/tutor", icon: GraduationCap, label: "Data Tutor" },
-  { to: "/ruangan", icon: DoorOpen, label: "Ruangan" },
-  { to: "/jadwal", icon: Calendar, label: "Jadwal" },
-  { to: "/pembayaran", icon: CreditCard, label: "Pembayaran" },
-  { to: "/orang-tua", icon: UserCheck, label: "Orang Tua" },
-  { to: "/perkembangan", icon: ClipboardList, label: "Perkembangan" },
-  { to: "/laporan", icon: FileBarChart, label: "Laporan" },
+const allLinks = [
+  { to: "/", icon: LayoutDashboard, label: "Dashboard", adminOnly: false },
+  { to: "/pendaftaran", icon: UserPlus, label: "Pendaftaran", adminOnly: true },
+  { to: "/siswa", icon: Users, label: "Data Siswa", adminOnly: true },
+  { to: "/kelas", icon: Library, label: "Kelas", adminOnly: true },
+  { to: "/tutor", icon: GraduationCap, label: "Data Tutor", adminOnly: true },
+  { to: "/ruangan", icon: DoorOpen, label: "Ruangan", adminOnly: true },
+  { to: "/jadwal", icon: Calendar, label: "Jadwal", adminOnly: false },
+  { to: "/pembayaran", icon: CreditCard, label: "Pembayaran", adminOnly: true },
+  { to: "/orang-tua", icon: UserCheck, label: "Orang Tua", adminOnly: true },
+  { to: "/perkembangan", icon: ClipboardList, label: "Perkembangan", adminOnly: false },
+  { to: "/laporan", icon: FileBarChart, label: "Laporan", adminOnly: true },
+  { to: "/users", icon: Shield, label: "Manajemen User", adminOnly: true },
 ];
 
 export default function AppSidebar() {
   const location = useLocation();
+  const { role, nama, signOut } = useAuth();
+
+  const links = allLinks.filter((link) => canAccess(role, link.to));
 
   return (
     <aside className="hidden md:flex w-64 flex-col bg-sidebar text-sidebar-foreground min-h-screen">
@@ -48,6 +55,20 @@ export default function AppSidebar() {
           );
         })}
       </nav>
+      <div className="px-3 py-4 border-t border-sidebar-border">
+        <div className="px-4 py-2">
+          <p className="text-sm font-medium text-sidebar-foreground truncate">{nama || "User"}</p>
+          <p className="text-xs text-sidebar-foreground/60 capitalize">{role || ""}</p>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start gap-2 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+          onClick={signOut}
+        >
+          <LogOut className="w-4 h-4" /> Keluar
+        </Button>
+      </div>
     </aside>
   );
 }

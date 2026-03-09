@@ -16,6 +16,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { canWrite } from "@/lib/roleAccess";
+import KirimJadwalPDF from "@/components/KirimJadwalPDF";
 
 const HARI_LABEL: Record<number, string> = {
   0: "Minggu", 1: "Senin", 2: "Selasa", 3: "Rabu", 4: "Kamis", 5: "Jumat", 6: "Sabtu",
@@ -42,7 +45,7 @@ function toDateObj(s: string) {
 const emptyForm = { tutorId: "", kelasId: "", ruangan: "", tanggal: "", jamMulai: "", jamSelesai: "" };
 
 type RuanganDB = { id: string; nama: string; kapasitas: number; status: string };
-type TutorDB = { id: string; nama: string; bidang: string };
+type TutorDB = { id: string; nama: string; bidang: string; email: string; telepon: string };
 type KelasDB = { id: string; nama: string };
 type JadwalDB = { id: string; tutor_id: string; kelas_id: string; ruangan: string; tanggal: string; jam_mulai: string; jam_selesai: string };
 type LiburDB = { id: string; tanggal: string; keterangan: string };
@@ -61,12 +64,14 @@ export default function Jadwal() {
   const [jadwalList, setJadwalList] = useState<JadwalDB[]>([]);
   const [liburList, setLiburList] = useState<LiburDB[]>([]);
   const navigate = useNavigate();
+  const { role } = useAuth();
+  const isWritable = canWrite(role, "jadwal");
 
   const fetchAll = useCallback(async () => {
     const [jadwalRes, liburRes, tutorRes, kelasRes, ruanganRes] = await Promise.all([
       supabase.from("jadwal").select("*"),
       supabase.from("libur").select("*"),
-      supabase.from("tutor").select("id, nama, bidang"),
+      supabase.from("tutor").select("id, nama, bidang, email, telepon"),
       supabase.from("kelas").select("id, nama"),
       getRuanganAktif(),
     ]);
@@ -272,47 +277,59 @@ export default function Jadwal() {
           <Button variant="outline" size="sm" onClick={() => navigate("/display")} className="gap-1.5">
             <Tv className="w-4 h-4" /> Mode TV
           </Button>
-          <Dialog open={liburOpen} onOpenChange={setLiburOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10">
-                <Ban className="w-4 h-4" /> Hari Libur
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Tambah Hari Libur</DialogTitle></DialogHeader>
-              <form onSubmit={handleLiburSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Tanggal *</Label>
-                  <Input type="date" value={liburForm.tanggal} onChange={(e) => setLiburForm({ ...liburForm, tanggal: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Keterangan *</Label>
-                  <Input placeholder="Libur Nasional, dll" value={liburForm.keterangan} onChange={(e) => setLiburForm({ ...liburForm, keterangan: e.target.value })} />
-                </div>
-                <Button type="submit" className="w-full">Tambah Hari Libur</Button>
-              </form>
-              {liburList.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <p className="text-sm font-medium">Daftar Hari Libur:</p>
-                  {[...liburList].sort((a, b) => a.tanggal.localeCompare(b.tanggal)).map((l) => (
-                    <div key={l.id} className="flex items-center justify-between py-1.5 px-2 rounded bg-destructive/10 text-sm">
-                      <span><span className="font-medium text-destructive">{formatTanggalShort(l.tanggal)}</span> — {l.keterangan}</span>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => hapusLibur(l.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
-          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setForm({ ...emptyForm }); }}>
-            <DialogTrigger asChild>
-              <Button><Plus className="w-4 h-4 mr-2" />Tambah Jadwal</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Tambah Jadwal Baru</DialogTitle></DialogHeader>
-              {renderForm(handleSubmit, false)}
-            </DialogContent>
-          </Dialog>
+          {isWritable && (
+            <KirimJadwalPDF
+              jadwalHariIni={(jadwalByDate[today] || [])}
+              tutors={tutors}
+              kelas={kelas}
+              tanggal={today}
+            />
+          )}
+          {isWritable && (
+            <Dialog open={liburOpen} onOpenChange={setLiburOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <Ban className="w-4 h-4" /> Hari Libur
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Tambah Hari Libur</DialogTitle></DialogHeader>
+                <form onSubmit={handleLiburSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Tanggal *</Label>
+                    <Input type="date" value={liburForm.tanggal} onChange={(e) => setLiburForm({ ...liburForm, tanggal: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Keterangan *</Label>
+                    <Input placeholder="Libur Nasional, dll" value={liburForm.keterangan} onChange={(e) => setLiburForm({ ...liburForm, keterangan: e.target.value })} />
+                  </div>
+                  <Button type="submit" className="w-full">Tambah Hari Libur</Button>
+                </form>
+                {liburList.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm font-medium">Daftar Hari Libur:</p>
+                    {[...liburList].sort((a, b) => a.tanggal.localeCompare(b.tanggal)).map((l) => (
+                      <div key={l.id} className="flex items-center justify-between py-1.5 px-2 rounded bg-destructive/10 text-sm">
+                        <span><span className="font-medium text-destructive">{formatTanggalShort(l.tanggal)}</span> — {l.keterangan}</span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => hapusLibur(l.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+          )}
+          {isWritable && (
+            <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setForm({ ...emptyForm }); }}>
+              <DialogTrigger asChild>
+                <Button><Plus className="w-4 h-4 mr-2" />Tambah Jadwal</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Tambah Jadwal Baru</DialogTitle></DialogHeader>
+                {renderForm(handleSubmit, false)}
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 
@@ -374,6 +391,7 @@ export default function Jadwal() {
                     <div key={j.id} className={`rounded-md p-2 text-[11px] space-y-0.5 ${isHoliday ? "bg-destructive/10 border border-destructive/20" : "bg-muted"}`}>
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-xs">{k?.nama || "-"}</span>
+                        {isWritable && (
                         <div className="flex gap-0.5">
                           <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => openEdit(j)}><Pencil className="w-3 h-3" /></Button>
                           <AlertDialog>
@@ -392,6 +410,7 @@ export default function Jadwal() {
                             </AlertDialogContent>
                           </AlertDialog>
                         </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Clock className="w-3 h-3" />{j.jam_mulai}-{j.jam_selesai}
