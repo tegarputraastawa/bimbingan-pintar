@@ -327,8 +327,9 @@ export default function Jadwal() {
               <DialogContent>
                 <DialogHeader><DialogTitle>Tambah Jadwal Baru</DialogTitle></DialogHeader>
                 {renderForm(handleSubmit, false)}
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
 
