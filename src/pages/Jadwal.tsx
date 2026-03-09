@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  getJadwalList, saveJadwal, deleteJadwal, getTutorList, getKelasList,
+  getJadwalList, saveJadwal, deleteJadwal,
   getLiburList, saveLibur, deleteLibur, generateId, formatTanggalShort,
   type Jadwal as JadwalType,
 } from "@/lib/store";
 import { checkRoomConflict, getRuanganAktif } from "@/lib/ruangan";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Trash2, Pencil, Clock, ChevronLeft, ChevronRight, GraduationCap, Ban, Tv, DoorOpen } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -45,6 +46,8 @@ function toDateObj(s: string) {
 const emptyForm = { tutorId: "", kelasId: "", ruangan: "", tanggal: "", jamMulai: "", jamSelesai: "" };
 
 type RuanganDB = { id: string; nama: string; kapasitas: number; status: string };
+type TutorDB = { id: string; nama: string; bidang: string };
+type KelasDB = { id: string; nama: string };
 
 export default function Jadwal() {
   const [refresh, setRefresh] = useState(0);
@@ -56,15 +59,24 @@ export default function Jadwal() {
   const [liburOpen, setLiburOpen] = useState(false);
   const [liburForm, setLiburForm] = useState({ tanggal: "", keterangan: "" });
   const [ruanganList, setRuanganList] = useState<RuanganDB[]>([]);
+  const [tutors, setTutors] = useState<TutorDB[]>([]);
+  const [kelas, setKelas] = useState<KelasDB[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     getRuanganAktif().then(setRuanganList);
+    const fetchData = async () => {
+      const [tutorRes, kelasRes] = await Promise.all([
+        supabase.from("tutor").select("id, nama, bidang"),
+        supabase.from("kelas").select("id, nama"),
+      ]);
+      setTutors((tutorRes.data || []) as TutorDB[]);
+      setKelas((kelasRes.data || []) as KelasDB[]);
+    };
+    fetchData();
   }, []);
 
   const jadwalList = getJadwalList();
-  const tutors = getTutorList();
-  const kelas = getKelasList();
   const liburList = getLiburList();
   const weekDates = useMemo(() => getWeekDates(weekRef), [weekRef]);
 
