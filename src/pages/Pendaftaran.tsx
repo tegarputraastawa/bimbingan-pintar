@@ -81,23 +81,51 @@ export default function Pendaftaran() {
       return;
     }
 
-    const { error } = await supabase.from("siswa").insert({
-      nama: form.nama,
-      email: form.email,
-      telepon: form.telepon,
-      alamat: form.alamat,
-      kelas_id: form.kelasId,
-      tanggal_mulai: format(tanggalMulai, "yyyy-MM-dd"),
-      tanggal_akhir: format(tanggalAkhir, "yyyy-MM-dd"),
-      aktif: true,
-    });
+    // Insert siswa
+    const { data: siswaData, error: siswaError } = await supabase
+      .from("siswa")
+      .insert({
+        nama: form.nama,
+        email: form.email,
+        telepon: form.telepon,
+        alamat: form.alamat,
+        kelas_id: form.kelasId,
+        tanggal_mulai: format(tanggalMulai, "yyyy-MM-dd"),
+        tanggal_akhir: format(tanggalAkhir, "yyyy-MM-dd"),
+        aktif: true,
+      })
+      .select()
+      .single();
 
-    if (error) {
+    if (siswaError || !siswaData) {
       toast.error("Gagal mendaftarkan siswa");
       return;
     }
 
-    toast.success(`${form.nama} berhasil didaftarkan!`);
+    // Hitung tanggal jatuh tempo: 10 hari sebelum tanggal_akhir
+    const jatuhTempo = new Date(tanggalAkhir);
+    jatuhTempo.setDate(jatuhTempo.getDate() - 10);
+
+    // Otomatis buat pembayaran dengan status belum_lunas
+    const selectedKelas = kelasList.find((k) => k.id === form.kelasId);
+    const { error: pembayaranError } = await supabase.from("pembayaran").insert({
+      siswa_id: siswaData.id,
+      jumlah: 0,
+      status: "belum_lunas",
+      metode: "tunai",
+      keterangan: "Pendaftaran baru - menunggu pembayaran",
+      periode_mulai: format(tanggalMulai, "yyyy-MM-dd"),
+      periode_akhir: format(tanggalAkhir, "yyyy-MM-dd"),
+      tanggal_jatuh_tempo: format(jatuhTempo, "yyyy-MM-dd"),
+    });
+
+    if (pembayaranError) {
+      console.error("Gagal membuat data pembayaran:", pembayaranError);
+      toast.error("Siswa terdaftar, tapi gagal membuat data pembayaran");
+    } else {
+      toast.success(`${form.nama} berhasil didaftarkan! Data pembayaran otomatis dibuat.`);
+    }
+
     navigate("/siswa");
   };
 
