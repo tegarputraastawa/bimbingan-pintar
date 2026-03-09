@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      jadwal: {
+        Row: {
+          created_at: string
+          id: string
+          jam_mulai: string
+          jam_selesai: string
+          kelas_id: string
+          ruangan: string
+          tanggal: string
+          tutor_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          jam_mulai: string
+          jam_selesai: string
+          kelas_id: string
+          ruangan: string
+          tanggal: string
+          tutor_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          jam_mulai?: string
+          jam_selesai?: string
+          kelas_id?: string
+          ruangan?: string
+          tanggal?: string
+          tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      kelas: {
+        Row: {
+          created_at: string
+          deskripsi: string
+          harga: number
+          id: string
+          nama: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deskripsi?: string
+          harga: number
+          id?: string
+          nama: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deskripsi?: string
+          harga?: number
+          id?: string
+          nama?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       laporan_perkembangan: {
         Row: {
           catatan: string
@@ -49,6 +112,30 @@ export type Database = {
           siswa_id?: string
           tanggal?: string
           tutor_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      libur: {
+        Row: {
+          created_at: string
+          id: string
+          keterangan: string
+          tanggal: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          keterangan: string
+          tanggal: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          keterangan?: string
+          tanggal?: string
           updated_at?: string
         }
         Relationships: []
@@ -89,6 +176,42 @@ export type Database = {
         }
         Relationships: []
       }
+      pembayaran: {
+        Row: {
+          created_at: string
+          id: string
+          jumlah: number
+          keterangan: string
+          metode: string
+          siswa_id: string
+          status: string
+          tanggal: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          jumlah: number
+          keterangan?: string
+          metode: string
+          siswa_id: string
+          status: string
+          tanggal?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          jumlah?: number
+          keterangan?: string
+          metode?: string
+          siswa_id?: string
+          status?: string
+          tanggal?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ruangan: {
         Row: {
           created_at: string
@@ -112,6 +235,75 @@ export type Database = {
           kapasitas?: number
           nama?: string
           status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      siswa: {
+        Row: {
+          aktif: boolean
+          alamat: string
+          created_at: string
+          email: string
+          id: string
+          kelas_id: string
+          nama: string
+          tanggal_daftar: string
+          telepon: string
+          updated_at: string
+        }
+        Insert: {
+          aktif?: boolean
+          alamat?: string
+          created_at?: string
+          email?: string
+          id?: string
+          kelas_id: string
+          nama: string
+          tanggal_daftar?: string
+          telepon: string
+          updated_at?: string
+        }
+        Update: {
+          aktif?: boolean
+          alamat?: string
+          created_at?: string
+          email?: string
+          id?: string
+          kelas_id?: string
+          nama?: string
+          tanggal_daftar?: string
+          telepon?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tutor: {
+        Row: {
+          bidang: string
+          created_at: string
+          email: string
+          id: string
+          nama: string
+          telepon: string
+          updated_at: string
+        }
+        Insert: {
+          bidang: string
+          created_at?: string
+          email?: string
+          id?: string
+          nama: string
+          telepon: string
+          updated_at?: string
+        }
+        Update: {
+          bidang?: string
+          created_at?: string
+          email?: string
+          id?: string
+          nama?: string
+          telepon?: string
           updated_at?: string
         }
         Relationships: []
