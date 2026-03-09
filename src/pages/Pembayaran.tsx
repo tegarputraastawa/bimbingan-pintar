@@ -58,6 +58,7 @@ export default function Pembayaran() {
   const [pembayaranList, setPembayaranList] = useState<Pembayaran[]>([]);
   const [siswaList, setSiswaList] = useState<Siswa[]>([]);
   const [kelasList, setKelasList] = useState<Kelas[]>([]);
+  const [orangTuaList, setOrangTuaList] = useState<OrangTua[]>([]);
   
   const [form, setForm] = useState({ 
     jumlah: "", 
