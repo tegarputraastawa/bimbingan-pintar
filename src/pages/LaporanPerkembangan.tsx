@@ -31,6 +31,7 @@ type Laporan = {
 type Siswa = { id: string; nama: string; aktif: boolean; kelas_id: string };
 type Kelas = { id: string; nama: string };
 type Tutor = { id: string; nama: string };
+type OrangTua = { id: string; siswa_id: string; nama: string; telepon: string };
 
 const kehadiranConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive"; icon: typeof CheckCircle }> = {
   hadir: { label: "Hadir", variant: "default", icon: CheckCircle },
