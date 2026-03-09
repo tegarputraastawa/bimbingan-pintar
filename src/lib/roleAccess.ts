@@ -12,7 +12,7 @@ export function canAccess(role: AppRole | null, path: string): boolean {
   if (!role) return false;
   if (role === "owner" || role === "admin") return true;
 
-  // Tutor can only access jadwal (view only) and perkembangan
+  // Tutor can only access dashboard, jadwal (view only) and perkembangan
   const tutorPaths = ["/", "/jadwal", "/perkembangan", "/display"];
   return tutorPaths.some((p) => path === p || path.startsWith(p + "/"));
 }
