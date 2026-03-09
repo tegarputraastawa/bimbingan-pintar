@@ -36,11 +36,11 @@ export default function ManajemenUser() {
   };
 
   const updateRole = async (id: string, newRole: string) => {
-    const { error } = await supabase.from("profiles").update({ role: newRole }).eq("id", id);
+    const { error } = await supabase.from("profiles").update({ role: newRole } as any).eq("id", id);
     if (error) { toast.error("Gagal: " + error.message); return; }
     // Also update user_roles table
     await supabase.from("user_roles").delete().eq("user_id", id);
-    await supabase.from("user_roles").insert({ user_id: id, role: newRole as "owner" | "admin" | "tutor" });
+    await supabase.from("user_roles").insert({ user_id: id, role: newRole } as any);
     toast.success("Role diperbarui");
     fetchProfiles();
   };
