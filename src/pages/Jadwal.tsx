@@ -45,7 +45,7 @@ function toDateObj(s: string) {
 const emptyForm = { tutorId: "", kelasId: "", ruangan: "", tanggal: "", jamMulai: "", jamSelesai: "" };
 
 type RuanganDB = { id: string; nama: string; kapasitas: number; status: string };
-type TutorDB = { id: string; nama: string; bidang: string };
+type TutorDB = { id: string; nama: string; bidang: string; email: string; telepon: string };
 type KelasDB = { id: string; nama: string };
 type JadwalDB = { id: string; tutor_id: string; kelas_id: string; ruangan: string; tanggal: string; jam_mulai: string; jam_selesai: string };
 type LiburDB = { id: string; tanggal: string; keterangan: string };
