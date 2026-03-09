@@ -179,10 +179,10 @@ export default function KirimJadwalPDF({ jadwalHariIni, tutors, kelas, tanggal }
             <Button variant="outline" className="gap-1.5 text-sm" onClick={handleDownload}>
               <FileDown className="w-4 h-4" /> Download PDF
             </Button>
-            <Button variant="outline" className="gap-1.5 text-sm text-green-600 border-green-200 hover:bg-green-50" onClick={handleWhatsApp}>
+            <Button variant="outline" className="gap-1.5 text-sm text-success border-success/30 hover:bg-success/10" onClick={handleWhatsApp}>
               <MessageCircle className="w-4 h-4" /> WhatsApp
             </Button>
-            <Button variant="outline" className="gap-1.5 text-sm text-blue-600 border-blue-200 hover:bg-blue-50" onClick={handleEmail}>
+            <Button variant="outline" className="gap-1.5 text-sm text-info border-info/30 hover:bg-info/10" onClick={handleEmail}>
               <Mail className="w-4 h-4" /> Email
             </Button>
           </div>
