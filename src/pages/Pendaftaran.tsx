@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { UserPlus, CalendarIcon } from "lucide-react";
+import { UserPlus, CalendarIcon, Users } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,14 @@ export default function Pendaftaran() {
   });
   const [tanggalMulai, setTanggalMulai] = useState<Date>();
   const [tanggalAkhir, setTanggalAkhir] = useState<Date>();
+  const [isiOrtu, setIsiOrtu] = useState(false);
+  const [ortuForm, setOrtuForm] = useState({
+    nama: "",
+    telepon: "",
+    email: "",
+    alamat: "",
+    hubungan: "Orang Tua",
+  });
 
   useEffect(() => {
     loadKelas();
@@ -81,6 +90,11 @@ export default function Pendaftaran() {
       return;
     }
 
+    if (isiOrtu && !ortuForm.nama) {
+      toast.error("Mohon isi nama orang tua/wali");
+      return;
+    }
+
     // Insert siswa
     const { data: siswaData, error: siswaError } = await supabase
       .from("siswa")
@@ -102,12 +116,27 @@ export default function Pendaftaran() {
       return;
     }
 
+    // Insert orang tua jika diisi
+    if (isiOrtu && ortuForm.nama) {
+      const { error: ortuError } = await supabase.from("orang_tua").insert({
+        siswa_id: siswaData.id,
+        nama: ortuForm.nama,
+        telepon: ortuForm.telepon,
+        email: ortuForm.email,
+        alamat: ortuForm.alamat,
+        hubungan: ortuForm.hubungan,
+      });
+
+      if (ortuError) {
+        console.error("Gagal menyimpan data orang tua:", ortuError);
+        toast.error("Siswa terdaftar, tapi gagal menyimpan data orang tua");
+      }
+    }
+
     // Hitung tanggal jatuh tempo: 10 hari sebelum tanggal_akhir
     const jatuhTempo = new Date(tanggalAkhir);
     jatuhTempo.setDate(jatuhTempo.getDate() - 10);
 
-    // Otomatis buat pembayaran dengan status belum_lunas
-    const selectedKelas = kelasList.find((k) => k.id === form.kelasId);
     const { error: pembayaranError } = await supabase.from("pembayaran").insert({
       siswa_id: siswaData.id,
       jumlah: 0,
@@ -123,7 +152,7 @@ export default function Pendaftaran() {
       console.error("Gagal membuat data pembayaran:", pembayaranError);
       toast.error("Siswa terdaftar, tapi gagal membuat data pembayaran");
     } else {
-      toast.success(`${form.nama} berhasil didaftarkan! Data pembayaran otomatis dibuat.`);
+      toast.success(`${form.nama} berhasil didaftarkan!`);
     }
 
     navigate("/siswa");
@@ -136,15 +165,16 @@ export default function Pendaftaran() {
         <p className="text-muted-foreground mt-1">Daftarkan siswa baru ke bimbingan belajar</p>
       </div>
 
-      <Card className="border-none shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <UserPlus className="w-5 h-5 text-primary" />
-            Form Pendaftaran
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Data Siswa */}
+        <Card className="border-none shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <UserPlus className="w-5 h-5 text-primary" />
+              Data Siswa
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="nama">Nama Lengkap *</Label>
               <Input id="nama" placeholder="Masukkan nama lengkap" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} />
@@ -240,13 +270,73 @@ export default function Pendaftaran() {
                 <p className="text-lg font-bold text-primary mt-2">{formatRupiah(selectedKelas.harga)}<span className="text-xs font-normal text-muted-foreground">/bulan</span></p>
               </div>
             )}
-            <Button type="submit" className="w-full" size="lg">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Daftarkan Siswa
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* Data Orang Tua (Opsional) */}
+        <Card className="border-none shadow-sm">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Users className="w-5 h-5 text-primary" />
+                Data Orang Tua / Wali
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="toggle-ortu" className="text-sm text-muted-foreground">
+                  {isiOrtu ? "Aktif" : "Lewati"}
+                </Label>
+                <Switch id="toggle-ortu" checked={isiOrtu} onCheckedChange={setIsiOrtu} />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Opsional — bisa ditambahkan nanti di menu Orang Tua
+            </p>
+          </CardHeader>
+          {isiOrtu && (
+            <CardContent className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="ortu-nama">Nama Orang Tua / Wali *</Label>
+                <Input id="ortu-nama" placeholder="Masukkan nama" value={ortuForm.nama} onChange={(e) => setOrtuForm({ ...ortuForm, nama: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ortu-telepon">No. Telepon</Label>
+                  <Input id="ortu-telepon" placeholder="08xxxxxxxxxx" value={ortuForm.telepon} onChange={(e) => setOrtuForm({ ...ortuForm, telepon: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ortu-hubungan">Hubungan</Label>
+                  <Select value={ortuForm.hubungan} onValueChange={(v) => setOrtuForm({ ...ortuForm, hubungan: v })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Orang Tua">Orang Tua</SelectItem>
+                      <SelectItem value="Ayah">Ayah</SelectItem>
+                      <SelectItem value="Ibu">Ibu</SelectItem>
+                      <SelectItem value="Wali">Wali</SelectItem>
+                      <SelectItem value="Kakak">Kakak</SelectItem>
+                      <SelectItem value="Lainnya">Lainnya</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ortu-email">Email</Label>
+                <Input id="ortu-email" type="email" placeholder="email@contoh.com" value={ortuForm.email} onChange={(e) => setOrtuForm({ ...ortuForm, email: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ortu-alamat">Alamat</Label>
+                <Textarea id="ortu-alamat" placeholder="Alamat orang tua/wali" value={ortuForm.alamat} onChange={(e) => setOrtuForm({ ...ortuForm, alamat: e.target.value })} />
+              </div>
+            </CardContent>
+          )}
+        </Card>
+
+        <Button type="submit" className="w-full" size="lg">
+          <UserPlus className="w-4 h-4 mr-2" />
+          Daftarkan Siswa
+        </Button>
+      </form>
     </div>
   );
 }
