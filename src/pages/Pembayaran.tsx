@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CreditCard, AlertCircle, CheckCircle, Clock, Pencil, Calendar } from "lucide-react";
+import { CreditCard, AlertCircle, CheckCircle, Clock, Pencil, Calendar, MessageCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO, differenceInDays } from "date-fns";
@@ -38,6 +38,14 @@ type Kelas = {
   harga: number;
 };
 
+type OrangTua = {
+  id: string;
+  siswa_id: string;
+  nama: string;
+  telepon: string;
+  hubungan: string;
+};
+
 export default function Pembayaran() {
   const [refresh, setRefresh] = useState(0);
   const [editOpen, setEditOpen] = useState(false);
@@ -50,6 +58,7 @@ export default function Pembayaran() {
   const [pembayaranList, setPembayaranList] = useState<Pembayaran[]>([]);
   const [siswaList, setSiswaList] = useState<Siswa[]>([]);
   const [kelasList, setKelasList] = useState<Kelas[]>([]);
+  const [orangTuaList, setOrangTuaList] = useState<OrangTua[]>([]);
   
   const [form, setForm] = useState({ 
     jumlah: "", 
@@ -62,15 +71,17 @@ export default function Pembayaran() {
   }, [refresh]);
 
   const loadData = async () => {
-    const [pembayaranRes, siswaRes, kelasRes] = await Promise.all([
+    const [pembayaranRes, siswaRes, kelasRes, orangTuaRes] = await Promise.all([
       supabase.from("pembayaran").select("*").order("tanggal", { ascending: false }),
       supabase.from("siswa").select("id, nama, kelas_id"),
       supabase.from("kelas").select("id, nama, harga"),
+      supabase.from("orang_tua").select("id, siswa_id, nama, telepon, hubungan"),
     ]);
 
     if (pembayaranRes.data) setPembayaranList(pembayaranRes.data);
     if (siswaRes.data) setSiswaList(siswaRes.data);
     if (kelasRes.data) setKelasList(kelasRes.data);
+    if (orangTuaRes.data) setOrangTuaList(orangTuaRes.data);
   };
 
   const formatRupiah = (num: number) => {
@@ -344,8 +355,24 @@ export default function Pembayaran() {
           {filteredPembayaran.map((p) => {
             const siswa = siswaList.find((s) => s.id === p.siswa_id);
             const kelas = siswa ? kelasList.find((k) => k.id === siswa.kelas_id) : null;
+            const orangTua = orangTuaList.filter((ot) => ot.siswa_id === p.siswa_id);
             const isLunas = p.status === "lunas";
             const jatuhTempoStatus = getJatuhTempoStatus(p);
+
+            const sendWhatsApp = (telepon: string, namaOrtu: string) => {
+              const phone = telepon.replace(/\D/g, "").replace(/^0/, "62");
+              const siswaName = siswa?.nama || "siswa";
+              const kelasName = kelas?.nama || "";
+              const sisa = kelas ? formatRupiah(kelas.harga - p.jumlah) : "";
+              const jatuhTempo = p.tanggal_jatuh_tempo 
+                ? format(parseISO(p.tanggal_jatuh_tempo), "dd MMMM yyyy", { locale: localeId }) 
+                : "";
+              
+              const message = encodeURIComponent(
+                `Yth. ${namaOrtu},\n\nKami ingin mengingatkan bahwa pembayaran untuk *${siswaName}* pada kelas *${kelasName}* belum lunas.\n\nSisa pembayaran: *${sisa}*\nJatuh tempo: *${jatuhTempo}*\n\nMohon segera melakukan pembayaran. Terima kasih.`
+              );
+              window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
+            };
 
             return (
               <Card 
@@ -363,27 +390,19 @@ export default function Pembayaran() {
                         <p className="font-semibold">{siswa?.nama || "Siswa dihapus"}</p>
                         <Badge variant={isLunas ? "default" : "destructive"} className="text-xs">
                           {isLunas ? (
-                            <>
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Lunas
-                            </>
+                            <><CheckCircle className="w-3 h-3 mr-1" />Lunas</>
                           ) : (
-                            <>
-                              <Clock className="w-3 h-3 mr-1" />
-                              Belum Lunas
-                            </>
+                            <><Clock className="w-3 h-3 mr-1" />Belum Lunas</>
                           )}
                         </Badge>
                         {jatuhTempoStatus === "overdue" && (
                           <Badge variant="destructive" className="text-xs">
-                            <AlertCircle className="w-3 h-3 mr-1" />
-                            Lewat Jatuh Tempo
+                            <AlertCircle className="w-3 h-3 mr-1" />Lewat Jatuh Tempo
                           </Badge>
                         )}
                         {jatuhTempoStatus === "urgent" && (
                           <Badge className="text-xs bg-yellow-500 hover:bg-yellow-600">
-                            <AlertCircle className="w-3 h-3 mr-1" />
-                            Segera Jatuh Tempo
+                            <AlertCircle className="w-3 h-3 mr-1" />Segera Jatuh Tempo
                           </Badge>
                         )}
                       </div>
@@ -392,6 +411,17 @@ export default function Pembayaran() {
                         <p className="text-sm text-muted-foreground mb-1">
                           Kelas: {kelas.nama} — Biaya: {formatRupiah(kelas.harga)}
                         </p>
+                      )}
+
+                      {/* Info Orang Tua */}
+                      {orangTua.length > 0 && (
+                        <div className="text-sm text-muted-foreground mb-1">
+                          {orangTua.map((ot) => (
+                            <span key={ot.id} className="mr-3">
+                              {ot.hubungan}: {ot.nama} ({ot.telepon})
+                            </span>
+                          ))}
+                        </div>
                       )}
                       
                       <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
@@ -421,7 +451,7 @@ export default function Pembayaran() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       <div className="text-right">
                         <p className="font-bold text-primary text-lg">{formatRupiah(p.jumlah)}</p>
                         {kelas && p.jumlah < kelas.harga && (
@@ -430,6 +460,36 @@ export default function Pembayaran() {
                           </p>
                         )}
                       </div>
+                      {/* WhatsApp reminder button - only show if belum lunas and parent has phone */}
+                      {!isLunas && orangTua.length > 0 && orangTua.some((ot) => ot.telepon) && (
+                        orangTua.length === 1 ? (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="text-green-600 border-green-300 hover:bg-green-50 hover:text-green-700"
+                            onClick={() => sendWhatsApp(orangTua[0].telepon, orangTua[0].nama)}
+                            title={`Kirim peringatan ke ${orangTua[0].nama}`}
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                          </Button>
+                        ) : (
+                          <div className="flex gap-1">
+                            {orangTua.filter((ot) => ot.telepon).map((ot) => (
+                              <Button
+                                key={ot.id}
+                                variant="outline"
+                                size="sm"
+                                className="text-green-600 border-green-300 hover:bg-green-50 hover:text-green-700 text-xs"
+                                onClick={() => sendWhatsApp(ot.telepon, ot.nama)}
+                                title={`Kirim peringatan ke ${ot.nama}`}
+                              >
+                                <MessageCircle className="w-3 h-3 mr-1" />
+                                {ot.hubungan}
+                              </Button>
+                            ))}
+                          </div>
+                        )
+                      )}
                       <Button 
                         variant="ghost" 
                         size="icon" 
