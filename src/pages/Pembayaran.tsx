@@ -38,6 +38,14 @@ type Kelas = {
   harga: number;
 };
 
+type OrangTua = {
+  id: string;
+  siswa_id: string;
+  nama: string;
+  telepon: string;
+  hubungan: string;
+};
+
 export default function Pembayaran() {
   const [refresh, setRefresh] = useState(0);
   const [editOpen, setEditOpen] = useState(false);
