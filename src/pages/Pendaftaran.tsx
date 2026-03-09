@@ -64,22 +64,39 @@ export default function Pendaftaran() {
 
   const selectedKelas = kelasList.find((k) => k.id === form.kelasId);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nama || !form.telepon || !form.kelasId) {
       toast.error("Mohon lengkapi data yang wajib diisi");
       return;
     }
-    saveSiswa({
-      id: generateId(),
+
+    if (!tanggalMulai || !tanggalAkhir) {
+      toast.error("Mohon pilih tanggal mulai dan tanggal akhir");
+      return;
+    }
+
+    if (tanggalAkhir < tanggalMulai) {
+      toast.error("Tanggal akhir harus setelah tanggal mulai");
+      return;
+    }
+
+    const { error } = await supabase.from("siswa").insert({
       nama: form.nama,
       email: form.email,
       telepon: form.telepon,
       alamat: form.alamat,
-      kelasId: form.kelasId,
-      tanggalDaftar: new Date().toISOString(),
+      kelas_id: form.kelasId,
+      tanggal_mulai: format(tanggalMulai, "yyyy-MM-dd"),
+      tanggal_akhir: format(tanggalAkhir, "yyyy-MM-dd"),
       aktif: true,
     });
+
+    if (error) {
+      toast.error("Gagal mendaftarkan siswa");
+      return;
+    }
+
     toast.success(`${form.nama} berhasil didaftarkan!`);
     navigate("/siswa");
   };
