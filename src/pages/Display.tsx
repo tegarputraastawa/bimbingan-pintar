@@ -1,9 +1,15 @@
 import { useMemo, useState, useEffect } from "react";
-import { getJadwalList, getTutorList, getKelasList, getLiburList, formatTanggalShort } from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
 import { Clock, GraduationCap, BookOpen, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
+
+type Jadwal = { id: string; tutor_id: string; kelas_id: string; ruangan: string; tanggal: string; jam_mulai: string; jam_selesai: string };
+type Tutor = { id: string; nama: string; foto_url: string | null };
+type Kelas = { id: string; nama: string };
+type Libur = { id: string; tanggal: string; keterangan: string };
 
 const HARI_LABEL: Record<number, string> = {
   0: "Minggu", 1: "Senin", 2: "Selasa", 3: "Rabu", 4: "Kamis", 5: "Jumat", 6: "Sabtu",
@@ -23,9 +29,18 @@ function getWeekDates(refDate: Date): string[] {
   return dates;
 }
 
+function formatTanggalShort(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" });
+}
+
 export default function Display() {
   const [weekRef, setWeekRef] = useState(new Date());
   const [now, setNow] = useState(new Date());
+  const [jadwalList, setJadwalList] = useState<Jadwal[]>([]);
+  const [tutors, setTutors] = useState<Tutor[]>([]);
+  const [kelas, setKelas] = useState<Kelas[]>([]);
+  const [liburList, setLiburList] = useState<Libur[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,10 +48,21 @@ export default function Display() {
     return () => clearInterval(timer);
   }, []);
 
-  const jadwalList = getJadwalList();
-  const tutors = getTutorList();
-  const kelas = getKelasList();
-  const liburList = getLiburList();
+  useEffect(() => {
+    const fetchData = async () => {
+      const [jadwalRes, tutorRes, kelasRes, liburRes] = await Promise.all([
+        supabase.from("jadwal").select("*"),
+        supabase.from("tutor").select("id, nama, foto_url"),
+        supabase.from("kelas").select("id, nama"),
+        supabase.from("libur").select("*"),
+      ]);
+      setJadwalList((jadwalRes.data || []) as Jadwal[]);
+      setTutors((tutorRes.data || []) as Tutor[]);
+      setKelas(kelasRes.data || []);
+      setLiburList(liburRes.data || []);
+    };
+    fetchData();
+  }, []);
 
   const weekDates = useMemo(() => getWeekDates(weekRef), [weekRef]);
   const today = now.toISOString().split("T")[0];
@@ -49,12 +75,12 @@ export default function Display() {
   }, [liburList]);
 
   const jadwalByDate = useMemo(() => {
-    const m: Record<string, typeof jadwalList> = {};
+    const m: Record<string, Jadwal[]> = {};
     jadwalList.forEach((j) => {
       if (!m[j.tanggal]) m[j.tanggal] = [];
       m[j.tanggal].push(j);
     });
-    Object.values(m).forEach((arr) => arr.sort((a, b) => a.jamMulai.localeCompare(b.jamMulai)));
+    Object.values(m).forEach((arr) => arr.sort((a, b) => a.jam_mulai.localeCompare(b.jam_mulai)));
     return m;
   }, [jadwalList]);
 
@@ -129,14 +155,14 @@ export default function Display() {
                   <p className="text-xs text-destructive text-center italic pt-4">LIBUR</p>
                 )}
                 {items.map((j) => {
-                  const tutor = tutors.find((t) => t.id === j.tutorId);
-                  const k = kelas.find((kk) => kk.id === j.kelasId);
-                  const isOngoing = isToday && currentTime >= j.jamMulai && currentTime <= j.jamSelesai;
+                  const tutor = tutors.find((t) => t.id === j.tutor_id);
+                  const k = kelas.find((kk) => kk.id === j.kelas_id);
+                  const isOngoing = isToday && currentTime >= j.jam_mulai && currentTime <= j.jam_selesai;
 
                   return (
                     <div
                       key={j.id}
-                      className={`rounded-lg p-3 text-xs space-y-1.5 transition-all ${
+                      className={`rounded-lg p-3 text-xs space-y-2 transition-all ${
                         isOngoing
                           ? "bg-primary text-primary-foreground ring-2 ring-primary shadow-lg scale-[1.02]"
                           : isHoliday
@@ -147,10 +173,17 @@ export default function Display() {
                       <p className="font-bold text-sm leading-tight">{k?.nama || "-"}</p>
                       <div className={`flex items-center gap-1 ${isOngoing ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
                         <Clock className="w-3 h-3" />
-                        <span className="font-medium">{j.jamMulai} - {j.jamSelesai}</span>
+                        <span className="font-medium">{j.jam_mulai} - {j.jam_selesai}</span>
                       </div>
-                      <div className={`flex items-center gap-1 ${isOngoing ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                        <GraduationCap className="w-3 h-3" />{tutor?.nama || "-"}
+                      {/* Tutor with photo */}
+                      <div className={`flex items-center gap-2 ${isOngoing ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                        <Avatar className="w-6 h-6 border border-border">
+                          <AvatarImage src={tutor?.foto_url || undefined} />
+                          <AvatarFallback className={`text-[10px] ${isOngoing ? "bg-primary-foreground/20 text-primary-foreground" : "bg-primary/10 text-primary"}`}>
+                            {tutor?.nama?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>{tutor?.nama || "-"}</span>
                       </div>
                       <p className={`${isOngoing ? "text-primary-foreground/80" : "text-muted-foreground"}`}>📍 {j.ruangan}</p>
                       {isOngoing && <Badge className="bg-primary-foreground/20 text-primary-foreground text-[10px]">SEDANG BERLANGSUNG</Badge>}
