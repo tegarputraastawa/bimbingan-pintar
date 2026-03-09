@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, ClipboardList, CheckCircle, XCircle, AlertTriangle, MinusCircle, Search, User, CalendarDays, BookOpen, TrendingUp } from "lucide-react";
+import { Plus, Trash2, Pencil, ClipboardList, CheckCircle, XCircle, AlertTriangle, MinusCircle, Search, User, CalendarDays, BookOpen, TrendingUp, FileDown, MessageCircle } from "lucide-react";
+import { buildReportText, shareWhatsApp, shareWhatsAppNoNumber, generatePDF } from "@/lib/laporanUtils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
